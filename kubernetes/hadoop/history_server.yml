@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hadoop-historyserver
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hadoop-historyserver
+  template:
+    metadata:
+      labels:
+        app: hadoop-historyserver
+    spec:
+      containers:
+      - name: historyserver
+        image: bde2020/hadoop-historyserver:2.0.0-hadoop3.2.1-java8
+        ports:
+        - containerPort: 8188

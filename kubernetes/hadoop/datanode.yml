@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: hadoop-datanode
+spec:
+  serviceName: "hadoop-datanode"
+  replicas: 2
+  selector:
+    matchLabels:
+      app: hadoop-datanode
+  template:
+    metadata:
+      labels:
+        app: hadoop-datanode
+    spec:
+      containers:
+        - name: datanode
+          image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+          ports:
+            - containerPort: 9864
+          env:
+            - name: CLUSTER_NAME
+              value: "hadoop-cluster"
+            - name: CORE_CONF_fs_defaultFS
+              value: "hdfs://hadoop-namenode-0.hadoop-namenode.default.svc.cluster.local:9000"
+            - name: HDFS_SITE_CONF_dfs_namenode_rpc-address
+              value: "hadoop-namenode-0.hadoop-namenode.default.svc.cluster.local:9000"
+          volumeMounts:
+            - mountPath: /hadoop/dfs/data
+              name: datanode-storage
+      volumes:
+        - name: datanode-storage
+          persistentVolumeClaim:
+            claimName: datanode-pvc
