@@ -1,6 +1,65 @@
 version: '3'
 
+x-airflow-common:
+  &airflow-common
+  image: airflow
+  # build: ./airflow
+  environment:
+    - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+    - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
+    - AIRFLOW__CORE__FERNET_KEY=FB0o_zt4e3Ziq3LdUUO7F2Z95cvFFx16hU8jTeR1ASM=
+    - AIRFLOW__CORE__LOAD_EXAMPLES=False
+    - AIRFLOW__CORE__LOGGING_LEVEL=INFO
+  depends_on:
+    - postgres
+  volumes:
+    - airflow_logs:/opt/airflow/logs
+    - airflow_plugins:/opt/airflow/plugins
+    - airflow_scripts:/opt/airflow/scripts
+
 services:
+  postgres:
+    image: postgres
+    container_name: postgres
+    environment:
+      - POSTGRES_USER=airflow
+      - POSTGRES_PASSWORD=airflow
+      - POSTGRES_DB=airflow
+      - POSTGRES_PORT=5432
+    ports:
+      - 5432:5432
+    volumes:
+      - postgres_db_volume:/var/lib/postgresql/data
+  airflow-init:
+    << : *airflow-common
+    container_name: airflow-init
+    entrypoint: /bin/bash
+    restart: on-failure
+    command:
+      - -c
+      - airflow db init &&
+        airflow users create
+          --role Admin
+          --username airflow
+          --password airflow
+          --email airflow@airflow.com
+          --firstname airflow
+          --lastname airflow
+
+  airflow-webserver:
+    << : *airflow-common
+    container_name: airflow-webserver
+    ports:
+      - 8085:8080
+    restart: always
+    command: airflow webserver
+
+  airflow-scheduler:
+    << : *airflow-common
+    container_name: airflow-scheduler
+    restart: always
+    command: airflow scheduler
+    
   namenode:
     image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
     container_name: namenode
@@ -163,3 +222,7 @@ volumes:
   zookeeper-data:
   kafka-broker-1-data:
   kafka-broker-2-data:
+  airflow_logs:
+  airflow_plugins:
+  airflow_scripts:
+  postgres_db_volume:
