@@ -3,3 +3,4 @@ undetected-chromedriver
 python-dotenv
 json
 csv
+beautifulsoup4
