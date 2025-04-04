@@ -1,0 +1,8 @@
+postgres=5432
+airflow-web=8085
+namenode=9870
+spark=8080
+kafka=8081
+hive-meta=9083
+trino=8082
+superset=8088

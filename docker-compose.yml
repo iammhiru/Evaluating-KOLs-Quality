@@ -155,6 +155,8 @@ services:
       - SPARK_MASTER=spark://spark-master:7077
     depends_on:
       - spark-master
+    volumes:
+      - ./hadoop/hive-site.xml:/opt/bitnami/spark/conf/hive-site.xml
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.3.2
@@ -213,6 +215,58 @@ services:
     depends_on:
       - kafka-broker-1
       - kafka-broker-2
+    
+  hive-metastore-db:
+    image: postgres:13
+    container_name: hive-metastore-db
+    environment:
+      POSTGRES_DB: metastore
+      POSTGRES_USER: hive
+      POSTGRES_PASSWORD: hive
+    ports:
+      - "5433:5432"
+    volumes:
+      - metastore_db:/var/lib/postgresql/data
+
+  hive-metastore:
+    image: bde2020/hive:2.3.2-postgresql-metastore
+    container_name: hive-metastore
+    environment:
+      HIVE_CORE_CONF_javax_jdo_option_ConnectionURL: jdbc:postgresql://hive-metastore-db:5432/metastore
+      HIVE_CORE_CONF_javax_jdo_option_ConnectionDriverName: org.postgresql.Driver
+      HIVE_CORE_CONF_javax_jdo_option_ConnectionUserName: hive
+      HIVE_CORE_CONF_javax_jdo_option_ConnectionPassword: hive
+      SERVICE_PRECONDITION: "hive-metastore-db:5432"
+    ports:
+      - "9083:9083"
+    depends_on:
+      - hive-metastore-db
+    
+  trino:
+    image: trinodb/trino:latest
+    container_name: trino
+    ports:
+      - "8082:8080"
+    volumes:
+      - ./trino/etc:/etc/trino
+    depends_on:
+      - hive-metastore
+
+  superset:
+    image: apache/superset:latest
+    container_name: superset
+    ports:
+      - "8088:8088"
+    environment:
+      - SUPERSET_LOAD_EXAMPLES=yes
+      - SUPERSET_SECRET_KEY=supersecret
+    depends_on:
+      - postgres
+      - trino
+    volumes:
+      - superset_home:/app/superset_home
+      - ./superset/superset-init.sh:/app/run-superset.sh
+
 
 volumes:
   hadoop_namenode:
@@ -220,9 +274,11 @@ volumes:
   hadoop_datanode2:
   hadoop_historyserver:
   zookeeper-data:
-  kafka-broker-1-data:
+  kafka-broker-1-data:  
   kafka-broker-2-data:
   airflow_logs:
   airflow_plugins:
   airflow_scripts:
   postgres_db_volume:
+  metastore_db:
+  superset_home:
