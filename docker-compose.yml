@@ -28,6 +28,7 @@ services:
       - POSTGRES_PORT=5432
     ports:
       - 5432:5432
+    restart: always
     volumes:
       - postgres_db_volume:/var/lib/postgresql/data
   airflow-init:
@@ -138,6 +139,7 @@ services:
   spark-master:
     image: bitnami/spark:latest
     container_name: spark-master
+    restart: always
     environment:
       - SPARK_MODE=master
       - SPARK_MASTER_HOST=spark-master
@@ -150,6 +152,7 @@ services:
   spark-worker:
     image: bitnami/spark:latest
     container_name: spark-worker
+    restart: always
     environment:
       - SPARK_MODE=worker
       - SPARK_MASTER=spark://spark-master:7077
@@ -165,11 +168,14 @@ services:
       ZOOKEEPER_TICK_TIME: 2000
     ports:
       - "2181:2181"
+    restart: always
 
   kafka-broker-1:
     image: confluentinc/cp-kafka:7.3.2
+    container_name: kafka-broker-1
     ports:
       - "9092:9092"
+      - "29092:29092"
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
@@ -182,13 +188,17 @@ services:
       KAFKA_LISTENER_PORTS: 29092,9092
     volumes:
       - kafka-broker-1-data:/var/lib/kafka/data
+    restart: always
     depends_on:
       - zookeeper
 
   kafka-broker-2:
     image: confluentinc/cp-kafka:7.3.2
+    container_name: kafka-broker-2
     ports:
       - "9093:9093"
+      - "29093:29093"
+    restart: always
     environment:
       KAFKA_BROKER_ID: 2
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
@@ -215,6 +225,7 @@ services:
     depends_on:
       - kafka-broker-1
       - kafka-broker-2
+    restart: always
     
   hive-metastore-db:
     image: postgres:13
@@ -227,6 +238,7 @@ services:
       - "5433:5432"
     volumes:
       - metastore_db:/var/lib/postgresql/data
+    restart: always
 
   hive-metastore:
     image: bde2020/hive:2.3.2-postgresql-metastore
@@ -241,10 +253,12 @@ services:
       - "9083:9083"
     depends_on:
       - hive-metastore-db
+    restart: always
     
   trino:
     image: trinodb/trino:latest
     container_name: trino
+    restart: always
     ports:
       - "8082:8080"
     volumes:
@@ -260,13 +274,13 @@ services:
     environment:
       - SUPERSET_LOAD_EXAMPLES=yes
       - SUPERSET_SECRET_KEY=supersecret
+    restart: always
     depends_on:
       - postgres
       - trino
     volumes:
       - superset_home:/app/superset_home
       - ./superset/superset-init.sh:/app/run-superset.sh
-
 
 volumes:
   hadoop_namenode:

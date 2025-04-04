@@ -1,37 +1,40 @@
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import expr
+from pyspark.sql.functions import from_json, col
+from pyspark.sql.types import StructType, StructField, StringType, IntegerType
 
-# Create Spark session
 spark = SparkSession.builder \
-    .appName("Kafka to HDFS Streaming") \
+    .appName("Kafka to HDFS Streaming JSON") \
     .config("spark.streaming.kafka.maxRatePerPartition", "1000") \
     .getOrCreate()
 
-# Kafka connection parameters
-kafka_brokers = "kafka-broker-1:29092,kafka-broker-2:29093"  # Adjust based on your setup
-kafka_topic = "kol_user"
+schema = StructType([
+    StructField("userid", StringType(), True),
+    StructField("id", StringType(), True),
+    StructField("like", IntegerType(), True),
+    StructField("comment", IntegerType(), True),
+    StructField("content", StringType(), True)
+])
 
-# Create a DataFrame representing the stream of input lines from Kafka
+kafka_brokers = "kafka-broker-1:29092,kafka-broker-2:29093"  # Điều chỉnh theo setup của bạn
+kafka_topic = "kol-posts"
+
 df = spark.readStream \
     .format("kafka") \
     .option("kafka.bootstrap.servers", kafka_brokers) \
     .option("subscribe", kafka_topic) \
+    .option("startingOffsets", "earliest") \
     .load()
 
-# Data processing: Convert Kafka's value (binary) to string and split by commas (CSV format)
-df = df.selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)")
+df_string = df.selectExpr("CAST(value AS STRING) as json_string")
 
-# Split the value (message) into separate columns based on the CSV format
-df = df.selectExpr("split(value, ',')[0] AS user_id", "split(value, ',')[1] AS interaction")
+df_parsed = df_string.select(from_json(col("json_string"), schema).alias("data")).select("data.*")
 
-# Define the output path for HDFS (Make sure the directory exists)
-output_path = "hdfs://namenode:9000/user/root/kol_user_output"
+output_path = "hdfs://namenode:9000/user/root/kol_posts_output"
 
-# Write the stream to HDFS in CSV format in append mode
-query = df.writeStream \
+query = df_parsed.writeStream \
     .outputMode("append") \
-    .format("csv") \
-    .option("checkpointLocation", "/tmp/checkpoints") \
+    .format("parquet") \
+    .option("checkpointLocation", "/tmp/kol_posts_checkpoints") \
     .option("path", output_path) \
     .start()
 

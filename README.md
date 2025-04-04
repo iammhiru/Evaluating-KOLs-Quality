@@ -8,7 +8,7 @@ Xây dựng luồng dữ liệu dựa trên kiến trúc Lambda để thu thập
 
 ## Cài đặt
 
-### Bước 1: Cài đặt Docker và Docker Compose
+### Cài đặt Docker và Docker Compose
 
 1. **Cài đặt Docker**  
    https://docs.docker.com/get-docker/
@@ -16,7 +16,7 @@ Xây dựng luồng dữ liệu dựa trên kiến trúc Lambda để thu thập
 2. **Cài đặt Docker Compose**  
    https://docs.docker.com/compose/install/
 
-### Bước 2: Xây dựng Image Airflow
+### Xây dựng Image Airflow
 
 ```bash
 docker build ./airflow -t airflow
