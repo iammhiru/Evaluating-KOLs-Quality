@@ -3,7 +3,6 @@ version: '3'
 x-airflow-common:
   &airflow-common
   image: airflow
-  # build: ./airflow
   environment:
     - AIRFLOW__CORE__EXECUTOR=LocalExecutor
     - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
@@ -16,6 +15,8 @@ x-airflow-common:
     - airflow_logs:/opt/airflow/logs
     - airflow_plugins:/opt/airflow/plugins
     - airflow_scripts:/opt/airflow/scripts
+  networks:
+    - kol-evaluate
 
 services:
   postgres:
@@ -31,6 +32,9 @@ services:
     restart: always
     volumes:
       - postgres_db_volume:/var/lib/postgresql/data
+    networks:
+      - kol-evaluate
+
   airflow-init:
     << : *airflow-common
     container_name: airflow-init
@@ -46,6 +50,8 @@ services:
           --email airflow@airflow.com
           --firstname airflow
           --lastname airflow
+    networks:
+      - kol-evaluate
 
   airflow-webserver:
     << : *airflow-common
@@ -54,13 +60,17 @@ services:
       - 8085:8080
     restart: always
     command: airflow webserver
+    networks:
+      - kol-evaluate
 
   airflow-scheduler:
     << : *airflow-common
     container_name: airflow-scheduler
     restart: always
     command: airflow scheduler
-    
+    networks:
+      - kol-evaluate
+
   namenode:
     image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
     container_name: namenode
@@ -74,36 +84,40 @@ services:
       - CLUSTER_NAME=test
     env_file:
       - ./services/hadoop/hadoop.env
+    networks:
+      - kol-evaluate
 
   datanode1:
     image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
     container_name: datanode1
     restart: always
     ports:
-      - 9864:9864 
-      - 9866:9866  
+      - 9864:9864
+      - 9866:9866
     volumes:
       - hadoop_datanode1:/hadoop/dfs/data
     environment:
       SERVICE_PRECONDITION: "namenode:9870"
     env_file:
       - ./services/hadoop/hadoop.env
-
+    networks:
+      - kol-evaluate
 
   datanode2:
     image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
     container_name: datanode2
     restart: always
     ports:
-      - 9865:9864 
-      - 9867:9866  
+      - 9865:9864
+      - 9867:9866
     volumes:
       - hadoop_datanode2:/hadoop/dfs/data
     environment:
       SERVICE_PRECONDITION: "namenode:9870"
     env_file:
       - ./services/hadoop/hadoop.env
-
+    networks:
+      - kol-evaluate
 
   resourcemanager:
     image: bde2020/hadoop-resourcemanager:2.0.0-hadoop3.2.1-java8
@@ -113,7 +127,8 @@ services:
       SERVICE_PRECONDITION: "namenode:9000 namenode:9870 datanode1:9864 datanode2:9864"
     env_file:
       - ./services/hadoop/hadoop.env
-
+    networks:
+      - kol-evaluate
 
   nodemanager1:
     image: bde2020/hadoop-nodemanager:2.0.0-hadoop3.2.1-java8
@@ -123,7 +138,8 @@ services:
       SERVICE_PRECONDITION: "namenode:9000 namenode:9870 datanode1:9864 datanode2:9864 resourcemanager:8088"
     env_file:
       - ./services/hadoop/hadoop.env
-
+    networks:
+      - kol-evaluate
 
   historyserver:
     image: bde2020/hadoop-historyserver:2.0.0-hadoop3.2.1-java8
@@ -135,6 +151,8 @@ services:
       - hadoop_historyserver:/hadoop/yarn/timeline
     env_file:
       - ./services/hadoop/hadoop.env
+    networks:
+      - kol-evaluate
 
   spark-master:
     image: bitnami/spark:latest
@@ -148,6 +166,8 @@ services:
     ports:
       - "8080:8080"
       - "7077:7077"
+    networks:
+      - kol-evaluate
 
   spark-worker:
     image: bitnami/spark:latest
@@ -160,6 +180,8 @@ services:
       - spark-master
     volumes:
       - ./hadoop/hive-site.xml:/opt/bitnami/spark/conf/hive-site.xml
+    networks:
+      - kol-evaluate
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.3.2
@@ -169,6 +191,8 @@ services:
     ports:
       - "2181:2181"
     restart: always
+    networks:
+      - kol-evaluate
 
   kafka-broker-1:
     image: confluentinc/cp-kafka:7.3.2
@@ -191,6 +215,8 @@ services:
     restart: always
     depends_on:
       - zookeeper
+    networks:
+      - kol-evaluate
 
   kafka-broker-2:
     image: confluentinc/cp-kafka:7.3.2
@@ -205,7 +231,7 @@ services:
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-broker-2:29093,PLAINTEXT_HOST://localhost:9093
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2 
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
       KAFKA_LISTENER_NAMES: PLAINTEXT,PLAINTEXT_HOST
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29093,PLAINTEXT_HOST://0.0.0.0:9093
       KAFKA_LISTENER_PORTS: 29093,9093
@@ -213,6 +239,8 @@ services:
       - kafka-broker-2-data:/var/lib/kafka/data
     depends_on:
       - zookeeper
+    networks:
+      - kol-evaluate
 
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
@@ -226,45 +254,45 @@ services:
       - kafka-broker-1
       - kafka-broker-2
     restart: always
-    
-  hive-metastore-db:
-    image: postgres:13
-    container_name: hive-metastore-db
-    environment:
-      POSTGRES_DB: metastore
-      POSTGRES_USER: hive
-      POSTGRES_PASSWORD: hive
-    ports:
-      - "5433:5432"
+    networks:
+      - kol-evaluate
+
+  hive-metastore-postgresql:
+    image: bde2020/hive-metastore-postgresql:2.3.0
+    container_name: hive-metastore-postgresql
+    networks:
+      - kol-evaluate
     volumes:
-      - metastore_db:/var/lib/postgresql/data
-    restart: always
+      - hive_metastore_postgresql:/var/lib/postgresql/data
 
   hive-metastore:
     image: bde2020/hive:2.3.2-postgresql-metastore
     container_name: hive-metastore
     environment:
-      HIVE_CORE_CONF_javax_jdo_option_ConnectionURL: jdbc:postgresql://hive-metastore-db:5432/metastore
-      HIVE_CORE_CONF_javax_jdo_option_ConnectionDriverName: org.postgresql.Driver
-      HIVE_CORE_CONF_javax_jdo_option_ConnectionUserName: hive
-      HIVE_CORE_CONF_javax_jdo_option_ConnectionPassword: hive
-      SERVICE_PRECONDITION: "hive-metastore-db:5432"
+      SERVICE_PRECONDITION: "hive-metastore-postgresql:5432"
     ports:
       - "9083:9083"
     depends_on:
-      - hive-metastore-db
+      - hive-metastore-postgresql
+    env_file:
+      - ./hadoop/hadoop-hive.env
+    command: /opt/hive/bin/hive --service metastore
     restart: always
-    
+    networks:
+      - kol-evaluate
+
   trino:
     image: trinodb/trino:latest
     container_name: trino
-    restart: always
+    restart: on-failure
     ports:
       - "8082:8080"
     volumes:
       - ./trino/etc:/etc/trino
     depends_on:
       - hive-metastore
+    networks:
+      - kol-evaluate
 
   superset:
     image: apache/superset:latest
@@ -281,6 +309,8 @@ services:
     volumes:
       - superset_home:/app/superset_home
       - ./superset/superset-init.sh:/app/run-superset.sh
+    networks:
+      - kol-evaluate
 
 volumes:
   hadoop_namenode:
@@ -288,11 +318,16 @@ volumes:
   hadoop_datanode2:
   hadoop_historyserver:
   zookeeper-data:
-  kafka-broker-1-data:  
+  kafka-broker-1-data:
   kafka-broker-2-data:
   airflow_logs:
   airflow_plugins:
   airflow_scripts:
   postgres_db_volume:
+  hive_metastore_postgresql:
   metastore_db:
   superset_home:
+
+networks:
+  kol-evaluate:
+    driver: bridge

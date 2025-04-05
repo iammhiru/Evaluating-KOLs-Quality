@@ -3,9 +3,11 @@ from pyspark.sql.functions import from_json, col
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType
 
 spark = SparkSession.builder \
-    .appName("Kafka to HDFS Streaming JSON") \
+    .appName("Kafka to HDFS Streaming CSV") \
     .config("spark.streaming.kafka.maxRatePerPartition", "1000") \
     .getOrCreate()
+
+spark.sparkContext.setLogLevel("WARN")
 
 schema = StructType([
     StructField("userid", StringType(), True),
@@ -15,27 +17,34 @@ schema = StructType([
     StructField("content", StringType(), True)
 ])
 
-kafka_brokers = "kafka-broker-1:29092,kafka-broker-2:29093"  # Điều chỉnh theo setup của bạn
+# Kafka config
+kafka_brokers = "kafka-broker-1:29092,kafka-broker-2:29093"
 kafka_topic = "kol-posts"
 
+# Đọc dữ liệu từ Kafka
 df = spark.readStream \
     .format("kafka") \
     .option("kafka.bootstrap.servers", kafka_brokers) \
     .option("subscribe", kafka_topic) \
-    .option("startingOffsets", "earliest") \
+    .option("startingOffsets", "latest") \
     .load()
 
+# Parse dữ liệu Kafka từ JSON
 df_string = df.selectExpr("CAST(value AS STRING) as json_string")
-
 df_parsed = df_string.select(from_json(col("json_string"), schema).alias("data")).select("data.*")
 
-output_path = "hdfs://namenode:9000/user/root/kol_posts_output"
+# Ghi dữ liệu dạng CSV
+output_path = "hdfs://namenode:9000/user/root/csv_data/kol_posts_output"
+checkpoint_path = "/tmp/kol_posts_checkpoints_csv"
 
 query = df_parsed.writeStream \
     .outputMode("append") \
-    .format("parquet") \
-    .option("checkpointLocation", "/tmp/kol_posts_checkpoints") \
+    .format("csv") \
     .option("path", output_path) \
+    .option("checkpointLocation", checkpoint_path) \
+    .option("header", True) \
+    .trigger(processingTime="5 minutes") \
     .start()
 
+# Giữ ứng dụng chạy liên tục
 query.awaitTermination()
