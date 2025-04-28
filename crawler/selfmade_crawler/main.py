@@ -4,7 +4,7 @@ import os
 import json
 import csv
 from fanpage_crawler import crawl_fanpage_info, crawl_fanpage_reels
-from post_crawler import crawl_recent_posts
+from post_crawler import crawl_posts
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 from dotenv import load_dotenv
@@ -12,40 +12,31 @@ from dotenv import load_dotenv
 load_dotenv()
 
 kol_list = [
-    {
-        "name": "Trinh Phạm",
-        "url": "https://www.facebook.com/profile.php?id=100044592212208"
-    },
+    # {
+    #     "name": "Trinh Phạm",
+    #     "url": "https://www.facebook.com/profile.php?id=100044592212208"
+    # },
     {
         "name": "Châu Bùi",
         "url": "https://www.facebook.com/chaubuiofficial"
     },
-    {
-        "name": "Đen Vâu",
-        "url": "https://www.facebook.com/denvau"
-    },
-    {
-        "name": "Giang Ơi",
-        "url": "https://www.facebook.com/giangoivlog"
-    },
-    {
-        "name": "Khoai Lang Thang",
-        "url": "https://www.facebook.com/KhoaiLangThang"
-    },
-    {
-        "name": "Ninh Tito",
-        "url": "https://www.facebook.com/ninheating"
-    },
-    {
-        "name": "Duy Thẩm",
-        "url": "https://www.facebook.com/duythamchannel"
-    },
-    {
-        "name": "Độ Mixi",
-        "url": "https://www.facebook.com/MixiGaming"
-    }
+    # {
+    #     "name": "Đen Vâu",
+    #     "url": "https://www.facebook.com/denvau"
+    # },
+    # {
+    #     "name": "Giang Ơi",
+    #     "url": "https://www.facebook.com/giangoivlog"
+    # },
+    # {
+    #     "name": "Khoai Lang Thang",
+    #     "url": "https://www.facebook.com/KhoaiLangThang"
+    # },
+    # {
+    #     "name": "Độ Mixi",
+    #     "url": "https://www.facebook.com/MixiGaming"
+    # }
 ]
-
 
 USER_DATA_DIR = "C:/Users/AD/AppData/Local/Google/Chrome/User Data"
 PROFILE_NAME = "Default" 
@@ -66,6 +57,7 @@ if __name__ == "__main__":
     options = uc.ChromeOptions()
     options.add_argument(f"--user-data-dir={USER_DATA_DIR}")
     options.add_argument(f"--profile-directory={PROFILE_NAME}")
+    # options.add_argument("--headless=new")
     options.add_argument("--disable-blink-features=AutomationControlled")
 
     driver = uc.Chrome(options=options)
@@ -73,23 +65,27 @@ if __name__ == "__main__":
 
     driver.get("https://www.facebook.com/")
 
+    # with open("data/kol_list.json", "r", encoding="utf-8") as f:
+    #     kol_list = json.load(f)
+
     for kol in kol_list:
         print(f"\n🔍 Crawling {kol['name']}")
 
         time.sleep(3.5)
+        posts = crawl_posts(driver, kol['url'])
         info = crawl_fanpage_info(driver, kol['url'])
-        # reels = crawl_fanpage_reels(driver, kol['url'])
-        reels = None
-        # posts = crawl_recent_posts(driver, scroll_count=5)
+        reels = crawl_fanpage_reels(driver, kol['url'])
 
         result = {
             "name": kol["name"],
             "profile": info,
             "reels": reels,
-            "posts": None,
+            # "profile": None,
+            # "reels": None,
+            "posts": posts,
         }
 
-        save_to_json(result, "info", f"{kol['name'].replace(' ', '_')}.json")
+        save_to_json(result, "info", f"{kol['name'].replace(' ', '_')}demo.json")
         print(f"✅ Đã lưu dữ liệu {kol['name']}")
 
     driver.quit()

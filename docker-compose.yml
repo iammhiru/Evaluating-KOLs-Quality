@@ -29,7 +29,7 @@ services:
       - POSTGRES_PORT=5432
     ports:
       - 5432:5432
-    restart: always
+    # restart: always
     volumes:
       - postgres_db_volume:/var/lib/postgresql/data
     networks:
@@ -39,7 +39,7 @@ services:
     << : *airflow-common
     container_name: airflow-init
     entrypoint: /bin/bash
-    restart: on-failure
+    # restart: on-failure
     command:
       - -c
       - airflow db init &&
@@ -58,7 +58,7 @@ services:
     container_name: airflow-webserver
     ports:
       - 8085:8080
-    restart: always
+    # restart: always
     command: airflow webserver
     networks:
       - kol-evaluate
@@ -66,7 +66,7 @@ services:
   airflow-scheduler:
     << : *airflow-common
     container_name: airflow-scheduler
-    restart: always
+    # restart: always
     command: airflow scheduler
     networks:
       - kol-evaluate
@@ -74,7 +74,7 @@ services:
   namenode:
     image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
     container_name: namenode
-    restart: always
+    # restart: always
     ports:
       - 9870:9870
       - 9000:9000
@@ -90,7 +90,7 @@ services:
   datanode1:
     image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
     container_name: datanode1
-    restart: always
+    # restart: always
     ports:
       - 9864:9864
       - 9866:9866
@@ -106,7 +106,7 @@ services:
   datanode2:
     image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
     container_name: datanode2
-    restart: always
+    # restart: always
     ports:
       - 9865:9864
       - 9867:9866
@@ -122,7 +122,7 @@ services:
   resourcemanager:
     image: bde2020/hadoop-resourcemanager:2.0.0-hadoop3.2.1-java8
     container_name: resourcemanager
-    restart: always
+    # restart: always
     environment:
       SERVICE_PRECONDITION: "namenode:9000 namenode:9870 datanode1:9864 datanode2:9864"
     env_file:
@@ -133,7 +133,7 @@ services:
   nodemanager1:
     image: bde2020/hadoop-nodemanager:2.0.0-hadoop3.2.1-java8
     container_name: nodemanager1
-    restart: always
+    # restart: always
     environment:
       SERVICE_PRECONDITION: "namenode:9000 namenode:9870 datanode1:9864 datanode2:9864 resourcemanager:8088"
     env_file:
@@ -144,7 +144,7 @@ services:
   historyserver:
     image: bde2020/hadoop-historyserver:2.0.0-hadoop3.2.1-java8
     container_name: historyserver
-    restart: always
+    # restart: always
     environment:
       SERVICE_PRECONDITION: "namenode:9000 namenode:9870 datanode1:9864 datanode2:9864 resourcemanager:8088"
     volumes:
@@ -157,7 +157,7 @@ services:
   spark-master:
     image: bitnami/spark:latest
     container_name: spark-master
-    restart: always
+    # restart: always
     environment:
       - SPARK_MODE=master
       - SPARK_MASTER_HOST=spark-master
@@ -172,7 +172,7 @@ services:
   spark-worker:
     image: bitnami/spark:latest
     container_name: spark-worker
-    restart: always
+    # restart: always
     environment:
       - SPARK_MODE=worker
       - SPARK_MASTER=spark://spark-master:7077
@@ -190,7 +190,7 @@ services:
       ZOOKEEPER_TICK_TIME: 2000
     ports:
       - "2181:2181"
-    restart: always
+    # restart: always
     networks:
       - kol-evaluate
 
@@ -212,7 +212,7 @@ services:
       KAFKA_LISTENER_PORTS: 29092,9092
     volumes:
       - kafka-broker-1-data:/var/lib/kafka/data
-    restart: always
+    # restart: always
     depends_on:
       - zookeeper
     networks:
@@ -224,7 +224,7 @@ services:
     ports:
       - "9093:9093"
       - "29093:29093"
-    restart: always
+    # restart: always
     environment:
       KAFKA_BROKER_ID: 2
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
@@ -253,7 +253,7 @@ services:
     depends_on:
       - kafka-broker-1
       - kafka-broker-2
-    restart: always
+    # restart: always
     networks:
       - kol-evaluate
 
@@ -277,14 +277,14 @@ services:
     env_file:
       - ./hadoop/hadoop-hive.env
     command: /opt/hive/bin/hive --service metastore
-    restart: always
+    # restart: always
     networks:
       - kol-evaluate
 
   trino:
     image: trinodb/trino:latest
     container_name: trino
-    restart: on-failure
+    # restart: on-failure
     ports:
       - "8082:8080"
     volumes:
@@ -302,7 +302,7 @@ services:
     environment:
       - SUPERSET_LOAD_EXAMPLES=yes
       - SUPERSET_SECRET_KEY=supersecret
-    restart: always
+    # restart: always
     depends_on:
       - postgres
       - trino
