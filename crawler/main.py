@@ -3,8 +3,9 @@ import time
 import os
 import json
 import csv
-from fanpage_crawler import crawl_fanpage_info, crawl_fanpage_reels
+from fanpage_crawler import crawl_fanpage_info
 from post_crawler import crawl_posts
+from reel_crawler import crawl_fanpage_reels
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 from dotenv import load_dotenv
@@ -45,6 +46,16 @@ def save_to_json(data, directory, filename):
     os.makedirs(directory, exist_ok=True)
     with open(f"{directory}/{filename}", 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
+
+def save_profile(profile, directory, filename):
+    os.makedirs(directory, exist_ok=True)
+    try:
+        with open(f"{directory}/{filename}", 'a', encoding='utf-8') as f:
+            data = json.dump(profile, ensure_ascii=False, indent=4)
+            f.write(data + "\n")
+            f.flush()
+    except Exception as e:
+        print(f"Error saving profile: {e}")
 
 def save_to_csv(data, filename):
     keys = data[0].keys()
