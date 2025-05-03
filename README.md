@@ -71,3 +71,10 @@ helm install hadoop ./kubernetes/hadoop
 ```sh
 kubectl create -f ./kubernetes/kafka-sm
 ```
+
+#### 3.4 Setup Hive-metastore
+
+```sh
+helm dependency build ./kubernetes/hive-metastore
+helm install hive-metastore ./kubernetes/hive-metastore
+```
