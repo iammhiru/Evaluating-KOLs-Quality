@@ -59,3 +59,7 @@ kubectl label node kol-system-m03 node-role.kubernetes.io/worker=worker & kubect
 ```sh
 kubectl create namespace kol-system & kubectl config set-context --current --namespace=kol-system
 ```
+
+#### 3.2 Deploy Hadoop
+```sh
+helm install hadoop ./kubernetes/hadoop
