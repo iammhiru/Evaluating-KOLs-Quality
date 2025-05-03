@@ -65,3 +65,9 @@ kubectl create namespace kol-system & kubectl config set-context --current --nam
 ```sh
 helm install hadoop ./kubernetes/hadoop
 ```
+
+#### 3.3 Deploy Kafka
+
+```sh
+kubectl create -f ./kubernetes/kafka-sm
+```
