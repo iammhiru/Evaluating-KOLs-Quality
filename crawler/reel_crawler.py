@@ -5,6 +5,25 @@ from selenium.common.exceptions import NoSuchElementException, TimeoutException
 import time
 import random
 
+def clean_caption_and_split(text: str):
+    text = text.strip()
+    if text.endswith("Ẩn bớt"):
+        text = text[: -len("Ẩn bớt")].strip()
+
+    words = text.split()
+    hashtags = []
+
+    for word in reversed(words):
+        if word.startswith("#"):
+            hashtags.insert(0, word)
+        else:
+            break
+
+    content_words_count = len(words) - len(hashtags)
+    content = ' '.join(words[:content_words_count]).strip()
+
+    return content, hashtags
+
 def crawl_fanpage_reels(driver, page_url):
     driver.get(page_url)
     time.sleep(3)
