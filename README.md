@@ -64,3 +64,4 @@ kubectl create namespace kol-system & kubectl config set-context --current --nam
 
 ```sh
 helm install hadoop ./kubernetes/hadoop
+```
