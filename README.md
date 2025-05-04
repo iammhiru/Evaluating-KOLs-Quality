@@ -33,7 +33,7 @@
 #### 2.1 Set context docker
 
 ```sh
-docker context set default
+docker context use default
 ```
 
 #### 2.2 Create cluster
