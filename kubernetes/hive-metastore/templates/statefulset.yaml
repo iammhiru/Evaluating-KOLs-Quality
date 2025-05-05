@@ -21,6 +21,10 @@ spec:
         app.kubernetes.io/component: metastore
         app.kubernetes.io/instance: {{ .Release.Name | quote }}
     spec:
+      initContainers:
+        - name: wait-for-postgres
+          image: busybox:1.28
+          command: ['sh', '-c', 'until nc -z hive-metastore-postgresql 5432; do echo "Waiting for PostgreSQL..."; sleep 2; done']
       containers:
       - name: metastore
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"

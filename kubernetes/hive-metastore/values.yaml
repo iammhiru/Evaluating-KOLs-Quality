@@ -2,10 +2,11 @@
 # See this repo for image build details: https://github.com/Comcast/kube-yarn/tree/master/image
 
 postgresql:
+  enabled: true
   postgresqlUsername: hive
   postgresqlPassword: hive
   postgresqlDatabase: metastore
-
+  
   initdbScriptsConfigMap: hive-metastore-postgresql-init
 image:
   repository: bde2020/hive
@@ -18,3 +19,4 @@ conf:
     hive_metastore_uris: thrift://hive-metastore:9083
     # if not set, default hive.metastore.warehouse.dir is default to: "hdfs://{{.Release.Name}}-hdfs:8020/user/hive/warehouse"
     # hive.metastore.warehouse.dir:
+    hive.metastore.warehouse.dir: hdfs://hadoop-hadoop-hdfs-nn:8020/user/hive/warehouse
