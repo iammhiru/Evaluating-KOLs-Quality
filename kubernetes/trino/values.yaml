@@ -390,6 +390,10 @@ catalogs:
   tpcds: |
     connector.name=tpcds
     tpcds.splits-per-node=4
+  hive: |
+    connector.name=hive
+    hive.metastore.uri=thrift://hive-metastore:9083
+    fs.hadoop.enabled=true
 # catalogs -- Configure
 # [catalogs](https://trino.io/docs/current/installation/deployment.html#catalog-properties).
 # @raw

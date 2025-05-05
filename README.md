@@ -78,3 +78,14 @@ kubectl create -f ./kubernetes/kafka-sm
 helm dependency build ./kubernetes/hive-metastore
 helm install hive-metastore ./kubernetes/hive-metastore
 ```
+
+#### 3.5 Deploy Trino
+
+```sh
+helm install trino ./kubernetes/trino
+```
+
+#### 3.6 Deploy Superset
+
+```sh
+helm install superset ./kubernetes/superset

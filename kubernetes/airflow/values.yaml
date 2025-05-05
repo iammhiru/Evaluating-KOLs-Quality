@@ -122,7 +122,7 @@ auth:
   username: user
   ## @param auth.password Password to access web UI
   ##
-  password: ""
+  password: user
   ## @param auth.fernetKey Fernet key to secure connections
   ## ref: https://airflow.readthedocs.io/en/stable/howto/secure-connections.html
   ## ref: https://bcb.github.io/airflow/fernet-key
@@ -3183,6 +3183,14 @@ redis:
     ##     memory: 1024Mi
     ##
     resources: {}
+  securityContext:
+    runAsUser: 1001
+    fsGroup: 1001
+  extraEnvVars:
+    - name: REDIS_APPENDONLY
+      value: "yes"
+    - name: REDIS_APPENDONLYDIR
+      value: "/data"
 
 ## External Redis&reg; configuration
 ## All of these values are only used when redis.enabled is set to false

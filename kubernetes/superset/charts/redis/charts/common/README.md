@@ -1,14 +1,14 @@
 # Bitnami Common Library Chart
 
-A [Helm Library Chart](https://helm.sh/docs/topics/library_charts/#helm) for grouping common logic between Bitnami charts.
+A [Helm Library Chart](https://helm.sh/docs/topics/library_charts/#helm) for grouping common logic between bitnami charts.
 
 ## TL;DR
 
 ```yaml
 dependencies:
   - name: common
-    version: 2.x.x
-    repository: oci://registry-1.docker.io/bitnamicharts
+    version: 1.x.x
+    repository: https://charts.bitnami.com/bitnami
 ```
 
 ```console
@@ -24,8 +24,6 @@ data:
   myvalue: "Hello World"
 ```
 
-Looking to use our applications in production? Try [VMware Tanzu Application Catalog](https://bitnami.com/enterprise), the commercial edition of the Bitnami catalog.
-
 ## Introduction
 
 This chart provides a common template helpers which can be used to develop new charts using [Helm](https://helm.sh) package manager.
@@ -34,8 +32,8 @@ Bitnami charts can be used with [Kubeapps](https://kubeapps.dev/) for deployment
 
 ## Prerequisites
 
-- Kubernetes 1.23+
-- Helm 3.8.0+
+- Kubernetes 1.19+
+- Helm 3.2.0+
 
 ## Parameters
 
@@ -61,7 +59,7 @@ tag:
 
 pullPolicy:
   type: string
-  description: Specify a imagePullPolicy.'
+  description: Specify a imagePullPolicy. Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
 
 pullSecrets:
   type: array
@@ -214,13 +212,13 @@ helm install test mychart --set path.to.value00="",path.to.value01=""
 
 #### Useful links
 
-- <https://techdocs.broadcom.com/us/en/vmware-tanzu/application-catalog/tanzu-application-catalog/services/tac-doc/apps-tutorials-resolve-helm2-helm3-post-migration-issues-index.html>
+- <https://docs.bitnami.com/tutorials/resolve-helm2-helm3-post-migration-issues/>
 - <https://helm.sh/docs/topics/v2_v3_migration/>
 - <https://helm.sh/blog/migrate-from-helm-v2-to-helm-v3/>
 
 ## License
 
-Copyright &copy; 2025 Broadcom. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
+Copyright &copy; 2023 Bitnami
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
