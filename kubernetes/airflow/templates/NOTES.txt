@@ -2,8 +2,6 @@ CHART NAME: {{ .Chart.Name }}
 CHART VERSION: {{ .Chart.Version }}
 APP VERSION: {{ .Chart.AppVersion }}
 
-Did you know there are enterprise versions of the Bitnami catalog? For enhanced secure software supply chain features, unlimited pulls from Docker, LTS support, or application customization, see Bitnami Premium or Tanzu Application Catalog. See https://www.arrow.com/globalecs/na/vendors/bitnami for more information.
-
 {{- $releaseNamespace := include "common.names.namespace" . }}
 {{- $clusterDomain := .Values.clusterDomain }}
 {{- $fullname := include "common.names.fullname" . }}
@@ -33,7 +31,7 @@ In order to replicate the container startup scripts execute this command:
 
 {{- else }}
 
-{{- if and (contains "127.0.0.1" $baseUrl) (not (eq "ClusterIP" .Values.service.type)) }}
+{{- if not $baseUrl }}
 ###############################################################################
 ### ERROR: You did not provide an external URL in your 'helm install' call ###
 ###############################################################################
@@ -91,7 +89,7 @@ To connect to Airflow from outside the cluster, perform the following steps:
 1.  Create a port-forward to the service:
 
     kubectl port-forward --namespace {{ $releaseNamespace }} svc/{{ $fullname }} {{ .Values.service.ports.http }}:{{ .Values.service.ports.http }} &
-    echo "Airflow URL: http{{ if .Values.web.tls }}s{{ end }}://127.0.0.1:{{ .Values.service.ports.http }}"
+    echo "Airflow URL: http://127.0.0.1:{{ .Values.service.ports.http }}"
 
 {{- else if eq .Values.service.type "NodePort" }}
 
@@ -99,7 +97,7 @@ To connect to Airflow from outside the cluster, perform the following steps:
 
     export NODE_IP=$(kubectl get nodes --namespace {{ $releaseNamespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
     export NODE_PORT=$(kubectl get svc --namespace {{ $releaseNamespace }} {{ $fullname }} -o jsonpath="{.spec.ports[0].nodePort}")
-    echo "Airflow URL: http{{ if .Values.web.tls }}s{{ end }}://${NODE_IP}:$NODE_PORT"
+    echo "Airflow URL: http://${NODE_IP}:$NODE_PORT"
 
 {{- else if eq .Values.service.type "LoadBalancer" }}
 
@@ -109,7 +107,7 @@ To connect to Airflow from outside the cluster, perform the following steps:
         Watch the status with: 'kubectl get svc --namespace {{ .Release.Namespace }} -w {{ $fullname }}'
 
     export SERVICE_IP=$(kubectl get svc --namespace {{ .Release.Namespace }} {{ $fullname }} --template "{{ "{{ range (index .status.loadBalancer.ingress 0) }}{{ . }}{{ end }}" }}")
-    echo "Airflow URL: http{{ if .Values.web.tls }}s{{ end }}://${SERVICE_IP}:{{ .Values.service.ports.http }}"
+    echo "Airflow URL: http://${SERVICE_IP}:{{ .Values.service.ports.http }}"
 
 {{- end }}
 
@@ -129,4 +127,3 @@ To connect to Airflow from outside the cluster, perform the following steps:
 {{- include "common.warnings.rollingTag" .Values.metrics.image }}
 {{- include "common.warnings.resources" (dict "sections" (list "scheduler" "web" "worker" "defaultSidecars.syncDAGsPlugins" "defaultInitContainers.loadDAGsPlugins" "metrics") "context" $) }}
 {{- include "common.warnings.modifiedImages" (dict "images" (list .Values.image .Values.metrics.image) "context" $) }}
-{{- include "common.errors.insecureImages" (dict "images" (list .Values.image .Values.metrics.image) "context" $) }}

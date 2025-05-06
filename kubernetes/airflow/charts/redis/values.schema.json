@@ -74,17 +74,17 @@
             "default": ""
         },
         "commonLabels": {
-            "type": ["object", "string"],
+            "type": "object",
             "description": "Labels to add to all deployed objects",
             "default": {}
         },
         "commonAnnotations": {
-            "type": ["object", "string"],
+            "type": "object",
             "description": "Annotations to add to all deployed objects",
             "default": {}
         },
         "secretAnnotations": {
-            "type": ["object", "string"],
+            "type": "object",
             "description": "Annotations to add to secret",
             "default": {}
         },
@@ -123,7 +123,7 @@
                     "default": false
                 },
                 "command": {
-                    "type": ["array", "string"],
+                    "type": "array",
                     "description": "Command to override all containers in the deployment",
                     "default": [
                         "sleep"
@@ -133,7 +133,7 @@
                     }
                 },
                 "args": {
-                    "type": ["array", "string"],
+                    "type": "array",
                     "description": "Args to override all containers in the deployment",
                     "default": [
                         "infinity"
@@ -222,22 +222,6 @@
                     "type": "boolean",
                     "description": "Mount password file from secret",
                     "default": true
-                },
-                "acl": {
-                    "type": "object",
-                    "properties": {
-                        "enabled": {
-                            "type": "boolean",
-                            "description": "Enables the support of the Redis ACL system",
-                            "default": false
-                        },
-                        "users": {
-                            "type": "array",
-                            "description": "A list of the configured users in the Redis ACL system",
-                            "default": [],
-                            "items": {}
-                        }
-                    }
                 }
             }
         },
@@ -281,13 +265,13 @@
                     }
                 },
                 "command": {
-                    "type": ["array", "string"],
+                    "type": "array",
                     "description": "Override default container command (useful when using custom images)",
                     "default": [],
                     "items": {}
                 },
                 "args": {
-                    "type": ["array", "string"],
+                    "type": "array",
                     "description": "Override default container args (useful when using custom images)",
                     "default": [],
                     "items": {}
@@ -310,7 +294,7 @@
                     "items": {}
                 },
                 "extraEnvVars": {
-                    "type": ["array", "string"],
+                    "type": "array",
                     "description": "Array with extra environment variables to add to Redis&reg; master nodes",
                     "default": [],
                     "items": {}
@@ -441,17 +425,17 @@
                     }
                 },
                 "customStartupProbe": {
-                    "type": ["object", "string"],
+                    "type": "object",
                     "description": "Custom startupProbe that overrides the default one",
                     "default": {}
                 },
                 "customLivenessProbe": {
-                    "type": ["object", "string"],
+                    "type": "object",
                     "description": "Custom livenessProbe that overrides the default one",
                     "default": {}
                 },
                 "customReadinessProbe": {
-                    "type": ["object", "string"],
+                    "type": "object",
                     "description": "Custom readinessProbe that overrides the default one",
                     "default": {}
                 },
@@ -593,7 +577,7 @@
                     "default": false
                 },
                 "hostAliases": {
-                    "type": ["array", "string"],
+                    "type": "array",
                     "description": "Redis&reg; master pods host aliases",
                     "default": [],
                     "items": {}
@@ -604,7 +588,7 @@
                     "default": {}
                 },
                 "podAnnotations": {
-                    "type": ["object", "string"],
+                    "type": "object",
                     "description": "Annotations for Redis&reg; master pods",
                     "default": {}
                 },
@@ -645,23 +629,23 @@
                     }
                 },
                 "affinity": {
-                    "type": ["object", "string"],
+                    "type": "object",
                     "description": "Affinity for Redis&reg; master pods assignment",
                     "default": {}
                 },
                 "nodeSelector": {
-                    "type": ["object", "string"],
+                    "type": "object",
                     "description": "Node labels for Redis&reg; master pods assignment",
                     "default": {}
                 },
                 "tolerations": {
-                    "type": ["array", "string"],
+                    "type": "array",
                     "description": "Tolerations for Redis&reg; master pods assignment",
                     "default": [],
                     "items": {}
                 },
                 "topologySpreadConstraints": {
-                    "type": ["array", "string"],
+                    "type": "array",
                     "description": "Spread Constraints for Redis&reg; master pod assignment",
                     "default": [],
                     "items": {}
@@ -672,35 +656,35 @@
                     "default": ""
                 },
                 "dnsConfig": {
-                    "type": ["object", "string"],
+                    "type": "object",
                     "description": "DNS Configuration for Redis&reg; master pod",
                     "default": {}
                 },
                 "lifecycleHooks": {
-                    "type": ["object", "string"],
+                    "type": "object",
                     "description": "for the Redis&reg; master container(s) to automate configuration before or after startup",
                     "default": {}
                 },
                 "extraVolumes": {
-                    "type": ["array", "string"],
+                    "type": "array",
                     "description": "Optionally specify extra list of additional volumes for the Redis&reg; master pod(s)",
                     "default": [],
                     "items": {}
                 },
                 "extraVolumeMounts": {
-                    "type": ["array", "string"],
+                    "type": "array",
                     "description": "Optionally specify extra list of additional volumeMounts for the Redis&reg; master container(s)",
                     "default": [],
                     "items": {}
                 },
                 "sidecars": {
-                    "type": ["array", "string"],
+                    "type": "array",
                     "description": "Add additional sidecar containers to the Redis&reg; master pod(s)",
                     "default": [],
                     "items": {}
                 },
                 "initContainers": {
-                    "type": ["array", "string"],
+                    "type": "array",
                     "description": "Add additional init containers to the Redis&reg; master pod(s)",
                     "default": [],
                     "items": {}
@@ -764,17 +748,17 @@
                             "default": {}
                         },
                         "labels": {
-                            "type": ["object", "string"],
+                            "type": "object",
                             "description": "Additional custom labels for the PVC",
                             "default": {}
                         },
                         "selector": {
-                            "type": ["object", "string"],
+                            "type": "object",
                             "description": "Additional labels to match for the PVC",
                             "default": {}
                         },
                         "dataSource": {
-                            "type": ["object", "string"],
+                            "type": "object",
                             "description": "Custom PVC data source",
                             "default": {}
                         },
@@ -849,7 +833,7 @@
                             "default": "Cluster"
                         },
                         "extraPorts": {
-                            "type": ["array", "string"],
+                            "type": "array",
                             "description": "Extra ports to expose (normally used with the `sidecar` value)",
                             "default": [],
                             "items": {}
@@ -881,13 +865,13 @@
                             "items": {}
                         },
                         "externalIPs": {
-                            "type": ["array", "string"],
+                            "type": "array",
                             "description": "Redis&reg; master service External IPs",
                             "default": [],
                             "items": {}
                         },
                         "annotations": {
-                            "type": ["object", "string"],
+                            "type": "object",
                             "description": "Additional custom annotations for Redis&reg; master service",
                             "default": {}
                         },
@@ -897,7 +881,7 @@
                             "default": "None"
                         },
                         "sessionAffinityConfig": {
-                            "type": ["object", "string"],
+                            "type": "object",
                             "description": "Additional settings for the sessionAffinity",
                             "default": {}
                         }
@@ -927,7 +911,7 @@
                             "default": false
                         },
                         "annotations": {
-                            "type": ["object", "string"],
+                            "type": "object",
                             "description": "Additional custom annotations for the ServiceAccount",
                             "default": {}
                         }
@@ -980,13 +964,13 @@
                     }
                 },
                 "command": {
-                    "type": ["array", "string"],
+                    "type": "array",
                     "description": "Override default container command (useful when using custom images)",
                     "default": [],
                     "items": {}
                 },
                 "args": {
-                    "type": ["array", "string"],
+                    "type": "array",
                     "description": "Override default container args (useful when using custom images)",
                     "default": [],
                     "items": {}
@@ -1009,7 +993,7 @@
                     "items": {}
                 },
                 "extraEnvVars": {
-                    "type": ["array", "string"],
+                    "type": "array",
                     "description": "Array with extra environment variables to add to Redis&reg; replicas nodes",
                     "default": [],
                     "items": {}
@@ -1160,17 +1144,17 @@
                     }
                 },
                 "customStartupProbe": {
-                    "type": ["object", "string"],
+                    "type": "object",
                     "description": "Custom startupProbe that overrides the default one",
                     "default": {}
                 },
                 "customLivenessProbe": {
-                    "type": ["object", "string"],
+                    "type": "object",
                     "description": "Custom livenessProbe that overrides the default one",
                     "default": {}
                 },
                 "customReadinessProbe": {
-                    "type": ["object", "string"],
+                    "type": "object",
                     "description": "Custom readinessProbe that overrides the default one",
                     "default": {}
                 },
@@ -1312,7 +1296,7 @@
                     "default": false
                 },
                 "hostAliases": {
-                    "type": ["array", "string"],
+                    "type": "array",
                     "description": "Redis&reg; replicas pods host aliases",
                     "default": [],
                     "items": {}
@@ -1323,7 +1307,7 @@
                     "default": {}
                 },
                 "podAnnotations": {
-                    "type": ["object", "string"],
+                    "type": "object",
                     "description": "Annotations for Redis&reg; replicas pods",
                     "default": {}
                 },
@@ -1364,23 +1348,23 @@
                     }
                 },
                 "affinity": {
-                    "type": ["object", "string"],
+                    "type": "object",
                     "description": "Affinity for Redis&reg; replicas pods assignment",
                     "default": {}
                 },
                 "nodeSelector": {
-                    "type": ["object", "string"],
+                    "type": "object",
                     "description": "Node labels for Redis&reg; replicas pods assignment",
                     "default": {}
                 },
                 "tolerations": {
-                    "type": ["array", "string"],
+                    "type": "array",
                     "description": "Tolerations for Redis&reg; replicas pods assignment",
                     "default": [],
                     "items": {}
                 },
                 "topologySpreadConstraints": {
-                    "type": ["array", "string"],
+                    "type": "array",
                     "description": "Spread Constraints for Redis&reg; replicas pod assignment",
                     "default": [],
                     "items": {}
@@ -1391,35 +1375,35 @@
                     "default": ""
                 },
                 "dnsConfig": {
-                    "type": ["object", "string"],
+                    "type": "object",
                     "description": "DNS Configuration for Redis&reg; replica pods",
                     "default": {}
                 },
                 "lifecycleHooks": {
-                    "type": ["object", "string"],
+                    "type": "object",
                     "description": "for the Redis&reg; replica container(s) to automate configuration before or after startup",
                     "default": {}
                 },
                 "extraVolumes": {
-                    "type": ["array", "string"],
+                    "type": "array",
                     "description": "Optionally specify extra list of additional volumes for the Redis&reg; replicas pod(s)",
                     "default": [],
                     "items": {}
                 },
                 "extraVolumeMounts": {
-                    "type": ["array", "string"],
+                    "type": "array",
                     "description": "Optionally specify extra list of additional volumeMounts for the Redis&reg; replicas container(s)",
                     "default": [],
                     "items": {}
                 },
                 "sidecars": {
-                    "type": ["array", "string"],
+                    "type": "array",
                     "description": "Add additional sidecar containers to the Redis&reg; replicas pod(s)",
                     "default": [],
                     "items": {}
                 },
                 "initContainers": {
-                    "type": ["array", "string"],
+                    "type": "array",
                     "description": "Add additional init containers to the Redis&reg; replicas pod(s)",
                     "default": [],
                     "items": {}
@@ -1483,17 +1467,17 @@
                             "default": {}
                         },
                         "labels": {
-                            "type": ["object", "string"],
+                            "type": "object",
                             "description": "Additional custom labels for the PVC",
                             "default": {}
                         },
                         "selector": {
-                            "type": ["object", "string"],
+                            "type": "object",
                             "description": "Additional labels to match for the PVC",
                             "default": {}
                         },
                         "dataSource": {
-                            "type": ["object", "string"],
+                            "type": "object",
                             "description": "Custom PVC data source",
                             "default": {}
                         },
@@ -1563,7 +1547,7 @@
                             "default": "Cluster"
                         },
                         "extraPorts": {
-                            "type": ["array", "string"],
+                            "type": "array",
                             "description": "Extra ports to expose (normally used with the `sidecar` value)",
                             "default": [],
                             "items": {}
@@ -1590,7 +1574,7 @@
                             "items": {}
                         },
                         "annotations": {
-                            "type": ["object", "string"],
+                            "type": "object",
                             "description": "Additional custom annotations for Redis&reg; replicas service",
                             "default": {}
                         },
@@ -1600,7 +1584,7 @@
                             "default": "None"
                         },
                         "sessionAffinityConfig": {
-                            "type": ["object", "string"],
+                            "type": "object",
                             "description": "Additional settings for the sessionAffinity",
                             "default": {}
                         }
@@ -1660,7 +1644,7 @@
                             "default": false
                         },
                         "annotations": {
-                            "type": ["object", "string"],
+                            "type": "object",
                             "description": "Additional custom annotations for the ServiceAccount",
                             "default": {}
                         }
@@ -1723,7 +1707,7 @@
                     }
                 },
                 "annotations": {
-                    "type": ["object", "string"],
+                    "type": "object",
                     "description": "Additional custom annotations for Redis&reg; Sentinel resource",
                     "default": {}
                 },
@@ -1773,13 +1757,13 @@
                     "default": ""
                 },
                 "command": {
-                    "type": ["array", "string"],
+                    "type": "array",
                     "description": "Override default container command (useful when using custom images)",
                     "default": [],
                     "items": {}
                 },
                 "args": {
-                    "type": ["array", "string"],
+                    "type": "array",
                     "description": "Override default container args (useful when using custom images)",
                     "default": [],
                     "items": {}
@@ -1796,7 +1780,7 @@
                     "items": {}
                 },
                 "extraEnvVars": {
-                    "type": ["array", "string"],
+                    "type": "array",
                     "description": "Array with extra environment variables to add to Redis&reg; Sentinel nodes",
                     "default": [],
                     "items": {}
@@ -1947,17 +1931,17 @@
                     }
                 },
                 "customStartupProbe": {
-                    "type": ["object", "string"],
+                    "type": "object",
                     "description": "Custom startupProbe that overrides the default one",
                     "default": {}
                 },
                 "customLivenessProbe": {
-                    "type": ["object", "string"],
+                    "type": "object",
                     "description": "Custom livenessProbe that overrides the default one",
                     "default": {}
                 },
                 "customReadinessProbe": {
-                    "type": ["object", "string"],
+                    "type": "object",
                     "description": "Custom readinessProbe that overrides the default one",
                     "default": {}
                 },
@@ -1995,17 +1979,17 @@
                             "default": {}
                         },
                         "labels": {
-                            "type": ["object", "string"],
+                            "type": "object",
                             "description": "Additional custom labels for the PVC",
                             "default": {}
                         },
                         "selector": {
-                            "type": ["object", "string"],
+                            "type": "object",
                             "description": "Additional labels to match for the PVC",
                             "default": {}
                         },
                         "dataSource": {
-                            "type": ["object", "string"],
+                            "type": "object",
                             "description": "Custom PVC data source",
                             "default": {}
                         },
@@ -2112,18 +2096,18 @@
                     }
                 },
                 "lifecycleHooks": {
-                    "type": ["object", "string"],
+                    "type": "object",
                     "description": "for the Redis&reg; sentinel container(s) to automate configuration before or after startup",
                     "default": {}
                 },
                 "extraVolumes": {
-                    "type": ["array", "string"],
+                    "type": "array",
                     "description": "Optionally specify extra list of additional volumes for the Redis&reg; Sentinel",
                     "default": [],
                     "items": {}
                 },
                 "extraVolumeMounts": {
-                    "type": ["array", "string"],
+                    "type": "array",
                     "description": "Optionally specify extra list of additional volumeMounts for the Redis&reg; Sentinel container(s)",
                     "default": [],
                     "items": {}
@@ -2172,7 +2156,7 @@
                             "default": "Cluster"
                         },
                         "extraPorts": {
-                            "type": ["array", "string"],
+                            "type": "array",
                             "description": "Extra ports to expose (normally used with the `sidecar` value)",
                             "default": [],
                             "items": {}
@@ -2204,7 +2188,7 @@
                             "items": {}
                         },
                         "annotations": {
-                            "type": ["object", "string"],
+                            "type": "object",
                             "description": "Additional custom annotations for Redis&reg; Sentinel service",
                             "default": {}
                         },
@@ -2214,7 +2198,7 @@
                             "default": "None"
                         },
                         "sessionAffinityConfig": {
-                            "type": ["object", "string"],
+                            "type": "object",
                             "description": "Additional settings for the sessionAffinity",
                             "default": {}
                         },
@@ -2222,15 +2206,9 @@
                             "type": "object",
                             "properties": {
                                 "annotations": {
-                                    "type": ["object", "string"],
+                                    "type": "object",
                                     "description": "Annotations for the headless service.",
                                     "default": {}
-                                },
-                                "extraPorts": {
-                                    "type": "array",
-                                    "description": "Extra ports to expose for the headless service",
-                                    "default": [],
-                                    "items": {}
                                 }
                             }
                         }
@@ -2275,7 +2253,7 @@
                             "default": ""
                         },
                         "extraPorts": {
-                            "type": ["array", "string"],
+                            "type": "array",
                             "description": "Extra ports to expose (normally used with the `sidecar` value)",
                             "default": [],
                             "items": {}
@@ -2312,7 +2290,7 @@
                             "default": "None"
                         },
                         "sessionAffinityConfig": {
-                            "type": ["object", "string"],
+                            "type": "object",
                             "description": "Additional settings for the sessionAffinity",
                             "default": {}
                         }
@@ -2354,13 +2332,13 @@
                     "default": true
                 },
                 "extraIngress": {
-                    "type": ["array", "string"],
+                    "type": "array",
                     "description": "Add extra ingress rules to the NetworkPolicy",
                     "default": [],
                     "items": {}
                 },
                 "extraEgress": {
-                    "type": ["array", "string"],
+                    "type": "array",
                     "description": "Add extra egress rules to the NetworkPolicy",
                     "default": [],
                     "items": {}
@@ -2421,7 +2399,7 @@
                     "default": false
                 },
                 "rules": {
-                    "type": ["array", "string"],
+                    "type": "array",
                     "description": "Custom RBAC rules to set",
                     "default": [],
                     "items": {}
@@ -2447,7 +2425,7 @@
                     "default": false
                 },
                 "annotations": {
-                    "type": ["object", "string"],
+                    "type": "object",
                     "description": "Additional custom annotations for the ServiceAccount",
                     "default": {}
                 }
@@ -2663,22 +2641,22 @@
                     }
                 },
                 "customStartupProbe": {
-                    "type": ["object", "string"],
+                    "type": "object",
                     "description": "Custom startupProbe that overrides the default one",
                     "default": {}
                 },
                 "customLivenessProbe": {
-                    "type": ["object", "string"],
+                    "type": "object",
                     "description": "Custom livenessProbe that overrides the default one",
                     "default": {}
                 },
                 "customReadinessProbe": {
-                    "type": ["object", "string"],
+                    "type": "object",
                     "description": "Custom readinessProbe that overrides the default one",
                     "default": {}
                 },
                 "command": {
-                    "type": ["array", "string"],
+                    "type": "array",
                     "description": "Override default metrics container init command (useful when using custom images)",
                     "default": [],
                     "items": {}
@@ -2694,7 +2672,7 @@
                     "default": {}
                 },
                 "extraEnvVars": {
-                    "type": ["array", "string"],
+                    "type": "array",
                     "description": "Array with extra environment variables to add to Redis&reg; exporter",
                     "default": [],
                     "items": {}
@@ -2760,13 +2738,13 @@
                     }
                 },
                 "extraVolumes": {
-                    "type": ["array", "string"],
+                    "type": "array",
                     "description": "Optionally specify extra list of additional volumes for the Redis&reg; metrics sidecar",
                     "default": [],
                     "items": {}
                 },
                 "extraVolumeMounts": {
-                    "type": ["array", "string"],
+                    "type": "array",
                     "description": "Optionally specify extra list of additional volumeMounts for the Redis&reg; metrics sidecar",
                     "default": [],
                     "items": {}
@@ -2815,7 +2793,7 @@
                             "default": "Cluster"
                         },
                         "extraPorts": {
-                            "type": ["array", "string"],
+                            "type": "array",
                             "description": "Extra ports to expose (normally used with the `sidecar` value)",
                             "default": [],
                             "items": {}
@@ -2837,7 +2815,7 @@
                             "items": {}
                         },
                         "annotations": {
-                            "type": ["object", "string"],
+                            "type": "object",
                             "description": "Additional custom annotations for Redis&reg; exporter service",
                             "default": {}
                         },
@@ -2894,7 +2872,7 @@
                             "default": false
                         },
                         "additionalLabels": {
-                            "type": ["object", "string"],
+                            "type": "object",
                             "description": "Additional labels that can be used so ServiceMonitor resource(s) can be discovered by Prometheus",
                             "default": {}
                         },
@@ -2968,7 +2946,7 @@
                             "default": false
                         },
                         "additionalLabels": {
-                            "type": ["object", "string"],
+                            "type": "object",
                             "description": "Additional labels that can be used so PodMonitor resource(s) can be discovered by Prometheus",
                             "default": {}
                         },
@@ -3010,12 +2988,12 @@
                             "default": ""
                         },
                         "additionalLabels": {
-                            "type": ["object", "string"],
+                            "type": "object",
                             "description": "Additional labels for the prometheusRule",
                             "default": {}
                         },
                         "rules": {
-                            "type": ["array", "string"],
+                            "type": "array",
                             "description": "Custom Prometheus rules",
                             "default": [],
                             "items": {}
@@ -3246,7 +3224,7 @@
                     }
                 },
                 "command": {
-                    "type": ["array", "string"],
+                    "type": "array",
                     "description": "Override default init-sysctl container command (useful when using custom images)",
                     "default": [],
                     "items": {}

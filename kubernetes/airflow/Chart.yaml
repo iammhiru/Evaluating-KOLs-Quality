@@ -2,13 +2,12 @@ annotations:
   category: WorkFlow
   images: |
     - name: airflow
-      image: docker.io/bitnami/airflow:2.10.5-debian-12-r11
-    - name: statsd-exporter
-      image: docker.io/bitnami/statsd-exporter:0.28.0-debian-12-r15
+      image: docker.io/bitnami/airflow:2.10.3-debian-12-r0
+    - name: airflow-exporter
+      image: docker.io/bitnami/airflow-exporter:0.20220314.0-debian-12-r50
   licenses: Apache-2.0
-  tanzuCategory: service
 apiVersion: v2
-appVersion: 2.10.5
+appVersion: 2.10.3
 dependencies:
 - condition: redis.enabled
   name: redis
@@ -27,7 +26,7 @@ description: Apache Airflow is a tool to express and execute workflows as direct
   acyclic graphs (DAGs). It includes utilities to schedule tasks, monitor task progress
   and handle task dependencies.
 home: https://bitnami.com
-icon: https://dyltqmyl993wv.cloudfront.net/assets/stacks/airflow/img/airflow-stack-220x234.png
+icon: https://bitnami.com/assets/stacks/airflow/img/airflow-stack-220x234.png
 keywords:
 - apache
 - airflow
@@ -39,4 +38,4 @@ maintainers:
 name: airflow
 sources:
 - https://github.com/bitnami/charts/tree/main/bitnami/airflow
-version: 22.7.3
+version: 21.4.1

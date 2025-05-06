@@ -72,6 +72,12 @@ helm install hadoop ./kubernetes/hadoop
 kubectl create -f ./kubernetes/kafka-sm
 ```
 
+#### 3.4 Deploy Spark
+
+```sh
+helm install spark ./kubernetes/spark
+```
+
 #### 3.4 Setup Hive-metastore
 
 ```sh
@@ -89,3 +95,10 @@ helm install trino ./kubernetes/trino
 
 ```sh
 helm install superset ./kubernetes/superset
+```
+
+#### 3.7 Deploy Airflow
+
+```sh
+helm install airflow ./kubernetes/airflow
+```

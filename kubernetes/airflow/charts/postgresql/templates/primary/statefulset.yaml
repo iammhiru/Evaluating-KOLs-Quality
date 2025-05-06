@@ -31,16 +31,13 @@ spec:
       name: {{ include "postgresql.v1.primary.fullname" . }}
       labels: {{- include "common.labels.standard" ( dict "customLabels" $podLabels "context" $ ) | nindent 8 }}
         app.kubernetes.io/component: primary
-      {{- if or .Values.passwordUpdateJob.enabled (include "postgresql.v1.primary.createConfigmap" .) (include "postgresql.v1.primary.createExtendedConfigmap" .) .Values.primary.podAnnotations }}
+      {{- if or (include "postgresql.v1.primary.createConfigmap" .) (include "postgresql.v1.primary.createExtendedConfigmap" .) .Values.primary.podAnnotations }}
       annotations:
         {{- if (include "postgresql.v1.primary.createConfigmap" .) }}
         checksum/configuration: {{ pick (include (print $.Template.BasePath "/primary/configmap.yaml") . | fromYaml) "data" | toYaml | sha256sum }}
         {{- end }}
         {{- if (include "postgresql.v1.primary.createExtendedConfigmap" .) }}
         checksum/extended-configuration: {{ pick (include (print $.Template.BasePath "/primary/extended-configmap.yaml") . | fromYaml) "data" | toYaml | sha256sum }}
-        {{- end }}
-        {{- if .Values.passwordUpdateJob.enabled }}
-        charts.bitnami.com/password-last-update: {{ now | date "20060102150405" | quote }}
         {{- end }}
         {{- if .Values.primary.podAnnotations }}
         {{- include "common.tplvalues.render" ( dict "value" .Values.primary.podAnnotations "context" $ ) | nindent 8 }}
@@ -489,7 +486,7 @@ spec:
             - name: postgresql-extended-config
               mountPath: {{ .Values.primary.persistence.mountPath }}/conf/conf.d/
             {{- end }}
-            {{- if and .Values.auth.usePasswordFiles (or .Values.auth.enablePostgresUser $customUser) }}
+            {{- if .Values.auth.usePasswordFiles }}
             - name: postgresql-password
               mountPath: /opt/bitnami/postgresql/secrets/
             {{- end }}
@@ -539,16 +536,16 @@ spec:
               value: {{ printf "127.0.0.1:%d/postgres?sslmode=disable" (int (include "postgresql.v1.service.port" .)) }}
             {{- if .Values.auth.usePasswordFiles }}
             - name: DATA_SOURCE_PASS_FILE
-              value: {{ printf "/opt/bitnami/postgresql/secrets/%s" (include (ternary "postgresql.v1.adminPasswordKey" "postgresql.v1.userPasswordKey" (empty $customUser)) .) }}
+              value: {{ printf "/opt/bitnami/postgresql/secrets/%s" (include "postgresql.v1.adminPasswordKey" .) }}
             {{- else }}
             - name: DATA_SOURCE_PASS
               valueFrom:
                 secretKeyRef:
                   name: {{ include "postgresql.v1.secretName" . }}
-                  key: {{ include (ternary "postgresql.v1.adminPasswordKey" "postgresql.v1.userPasswordKey" (empty $customUser)) . }}
+                  key: {{ include "postgresql.v1.adminPasswordKey" . }}
             {{- end }}
             - name: DATA_SOURCE_USER
-              value: {{ default "postgres" $customUser | quote }}
+              value: "postgres"
             {{- if .Values.metrics.extraEnvVars }}
             {{- include "common.tplvalues.render" (dict "value" .Values.metrics.extraEnvVars "context" $) | nindent 12 }}
             {{- end }}
@@ -584,7 +581,7 @@ spec:
             - name: empty-dir
               mountPath: /tmp
               subPath: tmp-dir
-            {{- if and .Values.auth.usePasswordFiles (or .Values.auth.enablePostgresUser $customUser) }}
+            {{- if .Values.auth.usePasswordFiles }}
             - name: postgresql-password
               mountPath: /opt/bitnami/postgresql/secrets/
             {{- end }}
@@ -615,7 +612,7 @@ spec:
           configMap:
             name: {{ include "postgresql.v1.primary.extendedConfigmapName" . }}
         {{- end }}
-        {{- if and .Values.auth.usePasswordFiles (or .Values.auth.enablePostgresUser $customUser) }}
+        {{- if .Values.auth.usePasswordFiles }}
         - name: postgresql-password
           secret:
             secretName: {{ include "postgresql.v1.secretName" . }}

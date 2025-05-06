@@ -6,7 +6,7 @@ metadata:
   name: kafka
 spec:
   serviceName: kafka
-  replicas: 3
+  replicas: 2
   selector:
     matchLabels:
       service: kafka
@@ -54,4 +54,4 @@ spec:
           - ReadWriteOnce
         resources:
           requests:
-            storage: 50Gi
+            storage: 40Gi

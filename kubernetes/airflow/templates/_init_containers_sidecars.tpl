@@ -6,246 +6,34 @@ SPDX-License-Identifier: APACHE-2.0
 {{/* vim: set filetype=mustache: */}}
 
 {{/*
-Returns an init-container that prepares the Airflow configuration files for main containers to use them
+Returns an init-container that copies the default configuration files so they are writable
 */}}
-{{- define "airflow.defaultInitContainers.prepareConfig" -}}
-- name: prepare-config
+{{- define "airflow.defaultInitContainers.createDefaultConfig" -}}
+- name: create-default-config
   image: {{ include "airflow.image" . }}
   imagePullPolicy: {{ .Values.image.pullPolicy }}
-  {{- if .Values.defaultInitContainers.prepareConfig.containerSecurityContext.enabled }}
-  securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" .Values.defaultInitContainers.prepareConfig.containerSecurityContext "context" .) | nindent 4 }}
+  {{- if .Values.defaultInitContainers.createDefaultConfig.containerSecurityContext.enabled }}
+  securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" .Values.defaultInitContainers.createDefaultConfig.containerSecurityContext "context" .) | nindent 4 }}
   {{- end }}
-  {{- if .Values.defaultInitContainers.prepareConfig.resources }}
-  resources: {{- toYaml .Values.defaultInitContainers.prepareConfig.resources | nindent 4 }}
-  {{- else if ne .Values.defaultInitContainers.prepareConfig.resourcesPreset "none" }}
-  resources: {{- include "common.resources.preset" (dict "type" .Values.defaultInitContainers.prepareConfig.resourcesPreset) | nindent 4 }}
+  {{- if .Values.defaultInitContainers.createDefaultConfig.resources }}
+  resources: {{- toYaml .Values.defaultInitContainers.createDefaultConfig.resources | nindent 4 }}
+  {{- else if ne .Values.defaultInitContainers.createDefaultConfig.resourcesPreset "none" }}
+  resources: {{- include "common.resources.preset" (dict "type" .Values.defaultInitContainers.createDefaultConfig.resourcesPreset) | nindent 4 }}
   {{- end }}
   command:
     - /bin/bash
   args:
     - -ec
     - |
-      . /opt/bitnami/scripts/libairflow.sh
-
-      mkdir -p /emptydir/app-base-dir /emptydir/app-conf-dir
-
-      # Copy the configuration files to the writable directory
-      cp /opt/bitnami/airflow/airflow.cfg /emptydir/app-base-dir/airflow.cfg
-
-      # Apply changes affecting credentials
-      export AIRFLOW_CONF_FILE="/emptydir/app-base-dir/airflow.cfg"
-    {{- if (include "airflow.database.useSqlConnection" .) }}
-    {{- if and .Values.usePasswordFiles }}
-      export AIRFLOW_DATABASE_SQL_CONN="$(< $AIRFLOW_DATABASE_SQL_CONN_FILE)"
-    {{- end }}
-      airflow_conf_set "database" "sql_alchemy_conn" "$AIRFLOW_DATABASE_SQL_CONN"
-    {{- else }}
-      {{- if and .Values.usePasswordFiles }}
-      export AIRFLOW_DATABASE_PASSWORD="$(< $AIRFLOW_DATABASE_PASSWORD_FILE)"
-      {{- end }}
-      db_user="$(airflow_encode_url "$AIRFLOW_DATABASE_USERNAME")"
-      db_password="$(airflow_encode_url "$AIRFLOW_DATABASE_PASSWORD")"
-      airflow_conf_set "database" "sql_alchemy_conn" "postgresql+psycopg2://${db_user}:${db_password}@${AIRFLOW_DATABASE_HOST}:${AIRFLOW_DATABASE_PORT_NUMBER}/${AIRFLOW_DATABASE_NAME}"
-    {{- end }}
-    {{- if or (eq .Values.executor "CeleryExecutor") (eq .Values.executor "CeleryKubernetesExecutor") }}
-      {{- if and .Values.usePasswordFiles }}
-      export REDIS_PASSWORD="$(< $REDIS_PASSWORD_FILE)"
-      {{- end }}
-      redis_credentials=":$(airflow_encode_url "$REDIS_PASSWORD")"
-      [[ -n "$REDIS_USER" ]] && redis_credentials="$(airflow_encode_url "$REDIS_USER")$redis_credentials"
-    {{- if (include "airflow.database.useSqlConnection" .) }}
-      airflow_conf_set "celery" "result_backend" "db+${AIRFLOW_DATABASE_SQL_CONN}"
-    {{- else }}
-      airflow_conf_set "celery" "result_backend" "db+postgresql://${db_user}:${db_password}@${AIRFLOW_DATABASE_HOST}:${AIRFLOW_DATABASE_PORT_NUMBER}/${AIRFLOW_DATABASE_NAME}"
-    {{- end }}
-      airflow_conf_set "celery" "broker_url" "redis://${redis_credentials}@${REDIS_HOST}:${REDIS_PORT_NUMBER}/${REDIS_DATABASE}"
-    {{- end }}
-      info "Airflow configuration ready"
-
-      if [[ -f "/opt/bitnami/airflow/config/airflow_local_settings.py" ]]; then
-          cp /opt/bitnami/airflow/config/airflow_local_settings.py /emptydir/app-conf-dir/airflow_local_settings.py
-      else
-          touch /emptydir/app-conf-dir/airflow_local_settings.py
-      fi
-
-      # HACK: When testing the db connection it creates an empty airflow.db file at the
+      cp "$(find /opt/bitnami/airflow -name default_airflow.cfg)" /default-conf/airflow.cfg
+      cp "$(find /opt/bitnami/airflow -name default_webserver_config.py)" /default-conf/webserver_config.py
+      # HACK: When testing the connection it creates an empty airflow.db file at the
       # application root
-      touch /emptydir/app-base-dir/airflow.db
-  env:
-    - name: BITNAMI_DEBUG
-      value: {{ ternary "true" "false" (or .Values.image.debug .Values.diagnosticMode.enabled) | quote }}
-    {{- if (include "airflow.database.useSqlConnection" .) }}
-    {{- if .Values.usePasswordFiles }}
-    - name: AIRFLOW_DATABASE_SQL_CONN_FILE
-      value: {{ printf "/opt/bitnami/airflow/secrets/%s" (include "airflow.database.secretKey" .) }}
-    {{- else }}
-    - name: AIRFLOW_DATABASE_SQL_CONN
-      valueFrom:
-        secretKeyRef:
-          name: {{ include "airflow.database.secretName" . }}
-          key: {{ include "airflow.database.secretKey" . }}
-    {{- end }}
-    {{- else }}
-    - name: AIRFLOW_DATABASE_NAME
-      value: {{ include "airflow.database.name" . }}
-    - name: AIRFLOW_DATABASE_USERNAME
-      value: {{ include "airflow.database.user" . }}
-    {{- if .Values.usePasswordFiles }}
-    - name: AIRFLOW_DATABASE_PASSWORD_FILE
-      value: {{ printf "/opt/bitnami/airflow/secrets/%s" (include "airflow.database.secretKey" .) }}
-    {{- else }}
-    - name: AIRFLOW_DATABASE_PASSWORD
-      valueFrom:
-        secretKeyRef:
-          name: {{ include "airflow.database.secretName" . }}
-          key: {{ include "airflow.database.secretKey" . }}
-    {{- end }}
-    - name: AIRFLOW_DATABASE_HOST
-      value: {{ include "airflow.database.host" . }}
-    - name: AIRFLOW_DATABASE_PORT_NUMBER
-      value: {{ include "airflow.database.port" . }}
-    {{- end }}
-    {{- if or (eq .Values.executor "CeleryExecutor") (eq .Values.executor "CeleryKubernetesExecutor") }}
-    - name: REDIS_HOST
-      value: {{ include "airflow.redis.host" . | quote }}
-    - name: REDIS_PORT_NUMBER
-      value: {{ include "airflow.redis.port" . | quote }}
-    {{- if and (not .Values.redis.enabled) .Values.externalRedis.username }}
-    - name: REDIS_USER
-      value: {{ .Values.externalRedis.username | quote }}
-    {{- end }}
-    {{- if .Values.usePasswordFiles }}
-    - name: REDIS_PASSWORD_FILE
-      value: "/opt/bitnami/airflow/secrets/redis-password"
-    {{- else }}
-    - name: REDIS_PASSWORD
-      valueFrom:
-        secretKeyRef:
-          name: {{ include "airflow.redis.secretName" . }}
-          key: redis-password
-    {{- end }}
-    {{- end }}
+      touch /default-conf/airflow.db    
   volumeMounts:
     - name: empty-dir
-      mountPath: /emptydir
-    - name: configuration
-      mountPath: /opt/bitnami/airflow/airflow.cfg
-      subPath: airflow.cfg
-    - name: configuration
-      mountPath: /opt/bitnami/airflow/config/airflow_local_settings.py
-      subPath: airflow_local_settings.py
-    {{- if  .Values.usePasswordFiles }}
-    - name: airflow-secrets
-      mountPath: /opt/bitnami/airflow/secrets
-    {{- end }}
-{{- end -}}
-
-{{/*
-Returns an init-container that prepares the Airflow Webserver configuration files for main containers to use them
-*/}}
-{{- define "airflow.defaultInitContainers.prepareWebConfig" -}}
-- name: prepare-web-config
-  image: {{ include "airflow.image" . }}
-  imagePullPolicy: {{ .Values.image.pullPolicy }}
-  {{- if .Values.defaultInitContainers.prepareConfig.containerSecurityContext.enabled }}
-  securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" .Values.defaultInitContainers.prepareConfig.containerSecurityContext "context" .) | nindent 4 }}
-  {{- end }}
-  {{- if .Values.defaultInitContainers.prepareConfig.resources }}
-  resources: {{- toYaml .Values.defaultInitContainers.prepareConfig.resources | nindent 4 }}
-  {{- else if ne .Values.defaultInitContainers.prepareConfig.resourcesPreset "none" }}
-  resources: {{- include "common.resources.preset" (dict "type" .Values.defaultInitContainers.prepareConfig.resourcesPreset) | nindent 4 }}
-  {{- end }}
-  command:
-    - /bin/bash
-  args:
-    - -ec
-    - |
-      . /opt/bitnami/scripts/libairflow.sh
-
-      # Copy the configuration files to the writable directory
-      cp /opt/bitnami/airflow/webserver_config.py /emptydir/app-base-dir/webserver_config.py
-    {{- if .Values.ldap.enabled }}
-      {{- if .Values.usePasswordFiles }}
-      export AIRFLOW_LDAP_BIND_PASSWORD="$(< $AIRFLOW_LDAP_BIND_PASSWORD_FILE)"
-      {{- end }}
-      export AIRFLOW_WEBSERVER_CONF_FILE="/emptydir/app-base-dir/webserver_config.py"
-      airflow_webserver_conf_set "AUTH_LDAP_BIND_PASSWORD" "$AIRFLOW_LDAP_BIND_PASSWORD" "yes"
-    {{- end }}
-      info "Airflow webserver configuration ready"
-  env:
-    - name: BITNAMI_DEBUG
-      value: {{ ternary "true" "false" (or .Values.image.debug .Values.diagnosticMode.enabled) | quote }}
-    {{- if .Values.ldap.enabled }}
-    {{- if .Values.usePasswordFiles }}
-    - name: AIRFLOW_LDAP_BIND_PASSWORD_FILE
-      value: "/opt/bitnami/airflow/secrets/bind-password"
-    {{- else }}
-    - name: AIRFLOW_LDAP_BIND_PASSWORD
-      valueFrom:
-        secretKeyRef:
-          name: {{ include "airflow.ldap.secretName" . }}
-          key: bind-password
-    {{- end }}
-    {{- end }}
-  volumeMounts:
-    - name: empty-dir
-      mountPath: /emptydir
-    - name: webserver-configuration
-      mountPath: /opt/bitnami/airflow/webserver_config.py
-      subPath: webserver_config.py
-    {{- if  .Values.usePasswordFiles }}
-    - name: airflow-secrets
-      mountPath: /opt/bitnami/airflow/secrets
-    {{- end }}
-{{- end -}}
-
-{{/*
-Returns an init-container that waits for db migrations to be ready
-*/}}
-{{- define "airflow.defaultInitContainers.waitForDBMigrations" -}}
-- name: wait-for-db-migrations
-  image: {{ include "airflow.image" . }}
-  imagePullPolicy: {{ .Values.image.pullPolicy }}
-  {{- if .Values.defaultInitContainers.waitForDBMigrations.containerSecurityContext.enabled }}
-  securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" .Values.defaultInitContainers.waitForDBMigrations.containerSecurityContext "context" .) | nindent 4 }}
-  {{- end }}
-  {{- if .Values.defaultInitContainers.waitForDBMigrations.resources }}
-  resources: {{- toYaml .Values.defaultInitContainers.waitForDBMigrations.resources | nindent 4 }}
-  {{- else if ne .Values.defaultInitContainers.waitForDBMigrations.resourcesPreset "none" }}
-  resources: {{- include "common.resources.preset" (dict "type" .Values.defaultInitContainers.waitForDBMigrations.resourcesPreset) | nindent 4 }}
-  {{- end }}
-  command:
-    - /bin/bash
-  args:
-    - -ec
-    - |
-      . /opt/bitnami/scripts/airflow-env.sh
-      . /opt/bitnami/scripts/libairflow.sh
-
-      info "Waiting for db migrations to be completed"
-      airflow_wait_for_db_migrations
-  env:
-    - name: BITNAMI_DEBUG
-      value: {{ ternary "true" "false" (or .Values.image.debug .Values.diagnosticMode.enabled) | quote }}
-  volumeMounts:
-    - name: empty-dir
-      mountPath: /tmp
-      subPath: tmp-dir
-    - name: empty-dir
-      mountPath: /opt/bitnami/airflow/logs
-      subPath: app-logs-dir
-    - name: empty-dir
-      mountPath: /opt/bitnami/airflow/tmp
-      subPath: app-tmp-dir
-    - name: empty-dir
-      mountPath: /opt/bitnami/airflow/airflow.db
-      subPath: app-base-dir/airflow.db
-    - name: empty-dir
-      mountPath: /opt/bitnami/airflow/airflow.cfg
-      subPath: app-base-dir/airflow.cfg
-    {{- if .Values.extraVolumeMounts }}
-    {{- include "common.tplvalues.render" (dict "value" .Values.extraVolumeMounts "context" $) | nindent 4 }}
-    {{- end }}
+      mountPath: /default-conf
+      subPath: app-default-conf-dir
 {{- end -}}
 
 {{/*
@@ -351,8 +139,7 @@ Returns an init-container that loads DAGs from a ConfigMap or Git repositories
       is_dir_empty "/dags/{{ include "airflow.dagsPlugins.repository.name" . }}" && git clone {{ .repository }} --depth 1 --branch {{ .branch }} /dags/{{ include "airflow.dagsPlugins.repository.name" . }}
     {{- end }}
     {{- if not (empty .Values.dags.existingConfigmap) }}
-      mkdir -p /dags/external
-      cp -v /configmap/* /dags/external
+      cp /configmap/* /dags/external
     {{- end }}
   {{- end }}
   name: load-dags

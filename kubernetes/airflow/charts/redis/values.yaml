@@ -22,11 +22,6 @@ global:
   imagePullSecrets: []
   defaultStorageClass: ""
   storageClass: ""
-  ## Security parameters
-  ##
-  security:
-    ## @param global.security.allowInsecureImages Allows skipping image verification
-    allowInsecureImages: false
   redis:
     password: ""
   ## Compatibility adaptations for Kubernetes platforms
@@ -59,12 +54,6 @@ commonLabels: {}
 ## @param commonAnnotations Annotations to add to all deployed objects
 ##
 commonAnnotations: {}
-## @param configmapChecksumAnnotations Enable checksum annotations used to trigger rolling updates when ConfigMap(s) change
-##
-configmapChecksumAnnotations: true
-## @param secretChecksumAnnotations Enable checksum annotations used to trigger rolling updates when Secret(s) change
-##
-secretChecksumAnnotations: true
 ## @param secretAnnotations Annotations to add to secret
 ##
 secretAnnotations: {}
@@ -97,7 +86,6 @@ diagnosticMode:
   ##
   args:
     - infinity
-
 ## @section Redis&reg; Image parameters
 ##
 
@@ -114,9 +102,10 @@ diagnosticMode:
 image:
   registry: docker.io
   repository: bitnami/redis
-  tag: 7.4.2-debian-12-r6
+  tag: 7.4.1-debian-12-r0
   digest: ""
   ## Specify a imagePullPolicy
+  ## Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
   ## ref: https://kubernetes.io/docs/concepts/containers/images/#pre-pulled-images
   ##
   pullPolicy: IfNotPresent
@@ -145,7 +134,7 @@ auth:
   ## @param auth.enabled Enable password authentication
   ##
   enabled: true
-  ## @param auth.sentinel Enable authentication on sentinels too
+  ## @param auth.sentinel Enable password authentication on sentinels too
   ##
   sentinel: true
   ## @param auth.password Redis&reg; password
@@ -162,33 +151,10 @@ auth:
   existingSecretPasswordKey: ""
   ## @param auth.usePasswordFiles Mount credentials as files instead of using an environment variable
   ##
-  usePasswordFiles: true
+  usePasswordFiles: false
   ## @param auth.usePasswordFileFromSecret Mount password file from secret
   ##
   usePasswordFileFromSecret: true
-  ## Redis ACL restricts connections by limiting commands and key access with auth management.
-  ## ref: https://redis.io/docs/latest/operate/oss_and_stack/management/security/acl/
-  ##
-  acl:
-    ## @param auth.acl.enabled Enables the support of the Redis ACL system
-    ##
-    enabled: false
-    ## @param auth.acl.sentinel Enables the support of the Redis ACL system for Sentinel Nodes
-    ##
-    sentinel: false
-    ## @param auth.acl.users A list of the configured users in the Redis ACL system
-    ##
-    ## Example:
-    ## users:
-    ##   - username: "my-user"
-    ##     password: "mypassword"
-    ##     enabled: "on"
-    ##     commands: "+@all"
-    ##     keys: "~*"
-    ##     channels: "&*"
-    users: []
-    ## @param auth.acl.userSecret Name of the Secret, containing user credentials for ACL users. Keys must match usernames.
-    userSecret: ""
 ## @param commonConfiguration [string] Common configuration to be added into the ConfigMap
 ## ref: https://redis.io/topics/config
 ##
@@ -439,7 +405,8 @@ master:
   ## @param master.nodeSelector Node labels for Redis&reg; master pods assignment
   ## ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/
   ##
-  nodeSelector: {}
+  nodeSelector:
+    role: worker
   ## @param master.tolerations Tolerations for Redis&reg; master pods assignment
   ## ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
   ##
@@ -670,9 +637,6 @@ master:
   ## @param master.extraPodSpec Optionally specify extra PodSpec for the Redis&reg; master pod(s)
   ##
   extraPodSpec: {}
-  ## @param master.annotations Additional custom annotations for Redis&reg; Master resource
-  ##
-  annotations: {}
 ## @section Redis&reg; replicas configuration parameters
 ##
 replica:
@@ -924,7 +888,8 @@ replica:
   ## @param replica.nodeSelector Node labels for Redis&reg; replicas pods assignment
   ## ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/
   ##
-  nodeSelector: {}
+  nodeSelector:
+    role: worker
   ## @param replica.tolerations Tolerations for Redis&reg; replicas pods assignment
   ## ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
   ##
@@ -1161,9 +1126,6 @@ replica:
   ## @param replica.extraPodSpec Optionally specify extra PodSpec for the Redis&reg; replicas pod(s)
   ##
   extraPodSpec: {}
-  ## @param replica.annotations Additional custom annotations for Redis&reg; replicas resource
-  ##
-  annotations: {}
 ## @section Redis&reg; Sentinel configuration parameters
 ##
 
@@ -1186,9 +1148,10 @@ sentinel:
   image:
     registry: docker.io
     repository: bitnami/redis-sentinel
-    tag: 7.4.2-debian-12-r6
+    tag: 7.4.1-debian-12-r0
     digest: ""
     ## Specify a imagePullPolicy
+    ## Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
     ## ref: https://kubernetes.io/docs/concepts/containers/images/#pre-pulled-images
     ##
     pullPolicy: IfNotPresent
@@ -1500,15 +1463,7 @@ sentinel:
       ## @param sentinel.service.headless.annotations Annotations for the headless service.
       ##
       annotations: {}
-      ## @param sentinel.service.headless.extraPorts Optionally specify extra ports to expose for the headless service.
-      ## Example:
-      ## extraPorts:
-      ##   - name: my-custom-port
-      ##     port: 12345
-      ##     protocol: TCP
-      ##     targetPort: 12345
-      ##
-      extraPorts: []
+
   ## Redis&reg; master service parameters
   ##
   masterService:
@@ -1576,44 +1531,6 @@ sentinel:
   ## @param sentinel.extraPodSpec Optionally specify extra PodSpec for the Redis&reg; Sentinel pod(s)
   ##
   extraPodSpec: {}
-  
-  externalAccess:
-    ## @param sentinel.externalAccess.enabled Enable external access to the Redis
-    ##
-    enabled: false
-    service:
-        ## @param sentinel.externalAccess.service.loadBalancerIPAnnotaion Name of annotation to specify fixed IP for service in.
-        ##
-      loadBalancerIPAnnotaion: ""
-        ## @param sentinel.externalAccess.service.type Type for the services used to expose every Pod
-        ## At this moment only LoadBalancer is supported
-        ##
-      type: LoadBalancer
-      ## @param sentinel.externalAccess.service.redisPort Port for the services used to expose redis-server
-        ##
-      redisPort: 6379
-    
-      ## @param sentinel.externalAccess.service.sentinelPort Port for the services used to expose redis-sentinel
-        ##   
-      sentinelPort: 26379 
-        ## @param sentinel.externalAccess.service.loadBalancerIP Array of load balancer IPs for each Redis&reg; node. Length must be the same as sentinel.replicaCount
-        ##
-      loadBalancerIP: []
-        ## @param sentinel.externalAccess.service.loadBalancerClass Load Balancer class if service type is `LoadBalancer` (optional, cloud specific)
-        ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#type-loadbalancer
-        ##
-      loadBalancerClass: ""
-        ## @param sentinel.externalAccess.service.loadBalancerSourceRanges Service Load Balancer sources
-        ## ref: https://kubernetes.io/docs/tasks/access-application-cluster/configure-cloud-provider-firewall/#restrict-access-for-loadbalancer-service
-        ## e.g:
-        ## loadBalancerSourceRanges:
-        ##   - 10.10.10.0/24
-        ##
-      loadBalancerSourceRanges: []
-        ## @param sentinel.externalAccess.service.annotations Annotations to add to the services used to expose every Pod of the Redis&reg; Cluster
-        ##
-      annotations: {}
-
 ## @section Other Parameters
 ##
 
@@ -1785,7 +1702,7 @@ metrics:
   image:
     registry: docker.io
     repository: bitnami/redis-exporter
-    tag: 1.69.0-debian-12-r1
+    tag: 1.63.0-debian-12-r1
     digest: ""
     pullPolicy: IfNotPresent
     ## Optionally specify an array of imagePullSecrets.
@@ -2144,7 +2061,7 @@ metrics:
 volumePermissions:
   ## @param volumePermissions.enabled Enable init container that changes the owner/group of the PV mount point to `runAsUser:fsGroup`
   ##
-  enabled: false
+  enabled: true
   ## OS Shell + Utility image
   ## ref: https://hub.docker.com/r/bitnami/os-shell/tags/
   ## @param volumePermissions.image.registry [default: REGISTRY_NAME] OS Shell + Utility image registry
@@ -2157,7 +2074,7 @@ volumePermissions:
   image:
     registry: docker.io
     repository: bitnami/os-shell
-    tag: 12-debian-12-r40
+    tag: 12-debian-12-r30
     digest: ""
     pullPolicy: IfNotPresent
     ## Optionally specify an array of imagePullSecrets.
@@ -2221,9 +2138,10 @@ kubectl:
   image:
     registry: docker.io
     repository: bitnami/kubectl
-    tag: 1.32.3-debian-12-r1
+    tag: 1.31.1-debian-12-r3
     digest: ""
     ## Specify a imagePullPolicy
+    ## Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
     ## ref: https://kubernetes.io/docs/concepts/containers/images/#pre-pulled-images
     ##
     pullPolicy: IfNotPresent
@@ -2290,7 +2208,7 @@ sysctl:
   image:
     registry: docker.io
     repository: bitnami/os-shell
-    tag: 12-debian-12-r40
+    tag: 12-debian-12-r30
     digest: ""
     pullPolicy: IfNotPresent
     ## Optionally specify an array of imagePullSecrets.

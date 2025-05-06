@@ -125,8 +125,8 @@ Return the path to the CA cert file.
 {{- define "redis.tlsCACert" -}}
 {{- if (include "redis.createTlsSecret" . ) -}}
     {{- printf "/opt/bitnami/redis/certs/%s" "ca.crt" -}}
-{{- else }}
-    {{- ternary "" (printf "/opt/bitnami/redis/certs/%s" .Values.tls.certCAFilename) (empty .Values.tls.certCAFilename) }}
+{{- else -}}
+    {{- required "Certificate CA filename is required when TLS in enabled" .Values.tls.certCAFilename | printf "/opt/bitnami/redis/certs/%s" -}}
 {{- end -}}
 {{- end -}}
 
@@ -227,20 +227,7 @@ Return Redis&reg; password
 */}}
 {{- define "redis.password" -}}
 {{- if or .Values.auth.enabled .Values.global.redis.password -}}
-    {{- include "common.secrets.passwords.manage" (dict "secret" (include "redis.secretName" .) "key" (include "redis.secretPasswordKey" .) "providedValues" (list "global.redis.password" "auth.password") "length" 10 "skipB64enc" true "skipQuote" true "honorProvidedValues" true "context" $) -}}
-{{- end }}
-{{- end }}
-
-{{/*
-Returns the secret value if found or an empty string otherwise
-Used for fetching Redis ACL user passwords from Kubernetes Secrets
-*/}}
-{{- define "common.secrets.get" -}} 
-{{- $secret := (lookup "v1" "Secret" .context.Release.Namespace .secret) -}}
-{{- if and $secret (index $secret.data .key) -}}
-    {{- index $secret.data .key | b64dec -}}
-{{- else -}}
-    {{- "" -}}
+    {{- include "common.secrets.passwords.manage" (dict "secret" (include "redis.secretName" .) "key" (include "redis.secretPasswordKey" .) "providedValues" (list "global.redis.password" "auth.password") "length" 10 "skipB64enc" true "skipQuote" true "context" $) -}}
 {{- end }}
 {{- end }}
 
