@@ -3,7 +3,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import NoSuchElementException, TimeoutException, StaleElementReferenceException
+from selenium.common.exceptions import NoSuchElementException, TimeoutException, StaleElementReferenceException, ElementClickInterceptedException
 import time
 import re
 import random
@@ -12,7 +12,7 @@ def crawl_posts(driver, page_url, num_of_scroll=50):
     driver.get(page_url)
     
     try:
-        WebDriverWait(driver, 7).until(
+        WebDriverWait(driver, 5).until(
             EC.presence_of_element_located((By.XPATH, "//div[@role='main']"))
         )
     except TimeoutException:
@@ -25,9 +25,9 @@ def crawl_posts(driver, page_url, num_of_scroll=50):
 
     for _ in range(num_of_scroll):
             driver.execute_script("window.scrollBy(0, 450);")
-            time.sleep(5)
+            time.sleep(random.uniform(2.5, 3.5))
             
-            all_links = driver.find_elements(By.XPATH, "//a[contains(@href, '/posts/') or contains(@href, '/videos/') or contains(@href, 'story_fbid')]")
+            all_links = driver.find_elements(By.XPATH, "//a[contains(@href, '/posts/') or contains(@href, 'story_fbid')]")
             
             for link in all_links:
                 try:
@@ -59,7 +59,7 @@ def crawl_posts(driver, page_url, num_of_scroll=50):
             if time_anchor:
                 time_anchor = time_anchor[2]
                 ActionChains(driver).move_to_element(time_anchor).perform()
-                time.sleep(3)
+                time.sleep(2.5)
                 post_time = driver.find_elements(By.XPATH, "//span[contains(text(), 'Tháng') and contains(text(), 'lúc')]")
                 if post_time:
                     post['post_time'] = post_time[0].text.strip()
@@ -74,7 +74,7 @@ def crawl_posts(driver, page_url, num_of_scroll=50):
             scrollable_element = dialog.find_elements(By.XPATH, "./div/div/div/div[2]")
             if scrollable_element:
                 driver.execute_script("arguments[0].scrollTop += 250", scrollable_element[0])
-            time.sleep(4)
+            time.sleep(3)
             total_comment = driver.find_elements(By.XPATH, ".//span[contains(text(), 'bình luận')]")
             if total_comment:
                 post['total_comment'] = total_comment[0].text.strip()
@@ -91,7 +91,7 @@ def crawl_posts(driver, page_url, num_of_scroll=50):
             if emote_button:
                 emote_button = emote_button[0]
                 ActionChains(driver).move_to_element(emote_button).click().perform()
-                time.sleep(4)
+                time.sleep(3.5)
                 total_emote = driver.find_elements(By.XPATH, "//div[contains(@aria-label, 'đã bày tỏ cảm xúc') and contains(@aria-label, 'Hiển thị')]")
                 post['emotes'] = {}
                 if total_emote:
@@ -112,13 +112,20 @@ def crawl_posts(driver, page_url, num_of_scroll=50):
                 else:
                     post['emotes'] = None
                 close_button = driver.find_elements(By.XPATH, "//div[@aria-label='Đóng' and @role='button']")
-                if close_button:
-                    if len(close_button) > 3:
-                        close_button[2].click()
-                    else:
-                        close_button[-1].click()
-                else:
-                    print("Close button not found")
+                clicked = False
+                for btn in close_button:
+                    try:
+                        driver.execute_script("arguments[0].scrollIntoView(true);", btn)
+                        time.sleep(1)
+                        btn.click()
+                        clicked = True
+                        break
+                    except ElementClickInterceptedException:
+                        print("⚠️ Button bị che, thử cái tiếp theo...")
+                    except Exception as e:
+                        print(f"❌ Không thể click nút: {e}")
+                if not clicked:
+                    print("❌ Không có nút Đóng nào click được.")
                 time.sleep(2)
             else:
                 post['emotes'] = None

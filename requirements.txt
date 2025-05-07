@@ -6,3 +6,4 @@ beautifulsoup4
 facebook-scraper
 pandas
 lxml_html_clean
+playwright

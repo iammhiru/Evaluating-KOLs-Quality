@@ -8,6 +8,9 @@ from post_crawler import crawl_posts
 from reel_crawler import crawl_fanpage_reels
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -39,9 +42,6 @@ kol_list = [
     # }
 ]
 
-USER_DATA_DIR = "C:/Users/AD/AppData/Local/Google/Chrome/User Data"
-PROFILE_NAME = "Default" 
-
 def save_to_json(data, directory, filename):
     os.makedirs(directory, exist_ok=True)
     with open(f"{directory}/{filename}", 'w', encoding='utf-8') as f:
@@ -65,14 +65,26 @@ def save_to_csv(data, filename):
         dict_writer.writerows(data)
 
 if __name__ == "__main__":
-    options = uc.ChromeOptions()
-    options.add_argument(f"--user-data-dir={USER_DATA_DIR}")
-    options.add_argument(f"--profile-directory={PROFILE_NAME}")
-    # options.add_argument("--headless=new")
+    options = Options()
     options.add_argument("--disable-blink-features=AutomationControlled")
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--disable-gpu")
+    options.add_experimental_option("excludeSwitches", ["enable-automation"])
+    options.add_experimental_option('useAutomationExtension', False)
 
-    driver = uc.Chrome(options=options)
-    driver.maximize_window()
+    options.add_argument(r"--user-data-dir=C:/UserData/selenium_profile")
+    # options.add_argument("--headless=new")
+    driver = webdriver.Chrome(service=Service("E:\chromedriver-win64\chromedriver.exe"), options=options)
+
+    # Giấu navigator.webdriver (một dấu hiệu nhận dạng bot)
+    driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
+        "source": """
+            Object.defineProperty(navigator, 'webdriver', {
+                get: () => undefined
+            })
+        """
+    })
 
     driver.get("https://www.facebook.com/")
 
