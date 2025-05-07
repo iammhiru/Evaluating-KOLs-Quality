@@ -76,8 +76,6 @@ if __name__ == "__main__":
     options.add_argument(r"--user-data-dir=C:/UserData/selenium_profile")
     # options.add_argument("--headless=new")
     driver = webdriver.Chrome(service=Service("E:\chromedriver-win64\chromedriver.exe"), options=options)
-
-    # Giấu navigator.webdriver (một dấu hiệu nhận dạng bot)
     driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
         "source": """
             Object.defineProperty(navigator, 'webdriver', {
@@ -95,17 +93,17 @@ if __name__ == "__main__":
         print(f"\n🔍 Crawling {kol['name']}")
 
         time.sleep(3.5)
-        posts = crawl_posts(driver, kol['url'])
-        info = crawl_fanpage_info(driver, kol['url'])
+        # posts = crawl_posts(driver, kol['url'])
+        # info = crawl_fanpage_info(driver, kol['url'])
         reels = crawl_fanpage_reels(driver, kol['url'])
 
         result = {
             "name": kol["name"],
-            "profile": info,
+            # "profile": info,
             "reels": reels,
             # "profile": None,
             # "reels": None,
-            "posts": posts,
+            # "posts": posts,
         }
 
         save_to_json(result, "info", f"{kol['name'].replace(' ', '_')}demo.json")

@@ -7,6 +7,18 @@ from selenium.common.exceptions import NoSuchElementException, TimeoutException,
 import time
 import re
 import random
+import base64
+import urllib.parse
+
+def decode_comment_base64(comment_str):
+    try:
+        comment_str = urllib.parse.unquote(comment_str)
+        decoded = base64.b64decode(comment_str).decode("utf-8")
+        match = re.search(r'comment:\d+_(\d+)', decoded)
+        return match.group(1) if match else None
+    except Exception as e:
+        print(f"Decode error: {e}")
+        return None
 
 def crawl_posts(driver, page_url, num_of_scroll=50):
     driver.get(page_url)
@@ -24,7 +36,7 @@ def crawl_posts(driver, page_url, num_of_scroll=50):
     driver.execute_script("window.scrollBy(0, 550);")
 
     for _ in range(num_of_scroll):
-            driver.execute_script("window.scrollBy(0, 450);")
+            driver.execute_script("window.scrollBy(0, 500);")
             time.sleep(random.uniform(2.5, 3.5))
             
             all_links = driver.find_elements(By.XPATH, "//a[contains(@href, '/posts/') or contains(@href, 'story_fbid')]")
@@ -151,10 +163,18 @@ def crawl_posts(driver, page_url, num_of_scroll=50):
                     comment_info = dict()
                     comment_anchor = comment.find_elements(By.XPATH, ".//a[contains(@href, 'comment_id')]")
                     if comment_anchor:
-                        anchor_infor = comment_anchor[1].get_attribute("href")
-                        user_url, query = anchor_infor.split("?")
-                        comment_id = query.split("&")[0].lstrip('comment_id=')
+                        anchor_infor = comment_anchor[0].get_attribute("href")
+                        user_url = None
+                        if 'profile.php' in anchor_infor:
+                            user_url = anchor_infor.split("&")[0]
+                            comment_id = anchor_infor.split("&")[1].lstrip('comment_id=')
+                        else:
+                            user_url = anchor_infor.split("?")[0]
+                            comment_id = anchor_infor.split("?")[1].split("&")[0].lstrip('comment_id=')
                         comment_info['user_url'] = user_url
+                        comment_id = decode_comment_base64(comment_id)
+                        if comment_id in comment_id_set:
+                            continue
                         comment_info['comment_id'] = comment_id
                         comment_info['user_name'] = comment_anchor[1].text.strip()
                         comment_text = comment_anchor[1].find_elements(By.XPATH, "./ancestor::span[2]/following-sibling::div")
@@ -162,26 +182,15 @@ def crawl_posts(driver, page_url, num_of_scroll=50):
                             comment_info['comment_text'] = comment_text[0].text.strip()
                         else:
                             comment_info['comment_text'] = None
-                    # if comment_id not in comment_id_set:
-                    #     time_stamp_anchor = comment.find_elements(By.XPATH, ".//a[contains(@href, 'https://')]")
-                    #     time_stamp_anchor = time_stamp_anchor[2]
-                    #     ActionChains(driver).move_to_element(time_stamp_anchor).perform()
-                    #     time.sleep(2)
-                    #     comment_post_time = driver.find_elements(By.XPATH, "//span[contains(text(), 'Tháng') and contains(text(), 'lúc')]")
-                    #     if comment_post_time:
-                    #         comment_info['post_time'] = comment_post_time[0].text.strip()
-                    #     else:
-                    #         comment_info['post_time'] = None
-                    #     ActionChains(driver).move_by_offset(random.randint(-60, -50), 0).perform()
                     emote_count = comment.find_elements(By.XPATH, ".//div[contains(@aria-label, 'xem ai đã bày tỏ cảm xúc')]")
                     if emote_count:
-                        emote_count = emote_count[0].text.strip()
+                        emote_count = emote_count[0].get_attribute("aria-label")
+                        emote_count = emote_count.split(" ")[0]
                         comment_info['emote_count'] = emote_count
                     else:
                         comment_info['emote_count'] = 0
-                    if comment_id not in comment_id_set:
-                        comment_id_set.add(comment_id)
-                        comment_list.append(comment_info)
+                    comment_id_set.add(comment_id)
+                    comment_list.append(comment_info)
             post['comments'] = comment_list
         except NoSuchElementException:
             print("Element not found")
