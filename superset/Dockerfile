@@ -1,9 +1,5 @@
-FROM apache/superset
-# Switching to root to install the required packages
+FROM apachesuperset.docker.scarf.sh/apache/superset:latest
 USER root
-# Example: installing the MySQL driver to connect to the metadata database
-# if you prefer Postgres, you may want to use `psycopg2-binary` instead
-# RUN pip install mysqlclient
-RUN pip install sqlalchemy-trino
-# Switching back to using the `superset` user
+RUN pip install psycopg2-binary
+RUN pip install --no-cache-dir "trino[sqlalchemy]>=0.320.0"
 USER superset
