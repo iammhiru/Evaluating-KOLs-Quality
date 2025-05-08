@@ -9,7 +9,7 @@ import re
 import random
 from utils import save_to_json, decode_comment_base64
 
-def crawl_posts(driver, page_url, num_of_scroll=50):
+def crawl_posts(driver, page_url, page_id, num_of_scroll=50):
     driver.get(page_url)
     
     try:
@@ -194,7 +194,7 @@ def crawl_posts(driver, page_url, num_of_scroll=50):
                                 comment_info['emote_count'] = 0
 
                             comment_id_set.add(comment_id)
-                            save_to_json(comment_info, f"info/{time.strftime('%d%m%Y')}/post/comment", f"{post['base58_id']}_{comment_info['comment_id']}.json")
+                            save_to_json(comment_info, f"info/{time.strftime('%d%m%Y')}/post/comment", f"{page_id}_{post['post_id']}_{comment_info['comment_id']}.json")
                             comment_list.append(comment_info)
                     if len(comment_id_set) == cur_total_commment:
                         stagnant_round += 1
@@ -202,7 +202,7 @@ def crawl_posts(driver, page_url, num_of_scroll=50):
                             break
                     else:
                         stagnant_round = 0   
-                save_to_json(post, f"info/{time.strftime('%d%m%Y')}/post/post_info", f"{post['base58_id']}.json") 
+                save_to_json(post, f"info/{time.strftime('%d%m%Y')}/post/post_info", f"{page_id}_{post['post_id']}.json") 
                 post['comments'] = comment_list
                 post['crawl_posts'] = len(comment_id_set)
             except Exception as e:
@@ -211,8 +211,8 @@ def crawl_posts(driver, page_url, num_of_scroll=50):
         if 'videos' in url:
             try:
                 time.sleep(3)
-                post['url'] = page_url
-                post['id'] = page_url.split("/")[-2]
+                post['url'] = url
+                post['id'] = url.split("/")[-2]
 
                 watch_feed = driver.find_elements(By.XPATH, "//div[@id='watch_feed']")
                 if watch_feed:
@@ -305,7 +305,7 @@ def crawl_posts(driver, page_url, num_of_scroll=50):
                                 else:
                                     post['post_time'] = None
 
-                        save_to_json(post, f"info/{time.strftime('%d%m%Y')}/video/post_info", f"{post['id']}.json")
+                        save_to_json(post, f"info/{time.strftime('%d%m%Y')}/video/post_info", f"{page_id}_{post['id']}.json")
                         comment_id_set = set()
                         comment_list = list()
                         while True:
@@ -349,7 +349,7 @@ def crawl_posts(driver, page_url, num_of_scroll=50):
                             if comment_id not in comment_id_set:
                                 comment_id_set.add(comment_id)
                                 # comment_list.append(comment_info)
-                                save_to_json(comment_info, f"info/{time.strftime('%d%m%Y')}/video/comment", f"{post['id']}_{comment_info['comment_id']}.json")
+                                save_to_json(comment_info, f"info/{time.strftime('%d%m%Y')}/video/comment", f"{page_id}_{post['id']}_{comment_info['comment_id']}.json")
             except Exception as e:
                 print(f"Error: {e}")
                 post['post_info'] = None

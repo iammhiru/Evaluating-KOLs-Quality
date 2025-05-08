@@ -100,8 +100,8 @@ def crawl_fanpage_info(driver, page_url):
             else:
                 info['create_date'] = create_date
         
-        save_to_json(info, f"info/{time.strftime('%d%m%Y')}/profile", f"{info['name'].replace(' ', '_')}.json")
-        return info
+        save_to_json(info, f"info/{time.strftime('%d%m%Y')}/profile", f"{info['page_id'].replace(' ', '_')}.json")
+        return info['page_id']
     except Exception as e:
         print(f"❌ Lỗi khi crawl thông tin fanpage: {e}")
         return None

@@ -26,7 +26,7 @@ def clean_caption_and_split(text: str):
 
     return content, hashtags
 
-def crawl_fanpage_reels(driver, page_url, num_of_scroll=2):
+def crawl_fanpage_reels(driver, page_url, page_id, num_of_scroll=2):
     try:  
         driver.get(page_url)
         time.sleep(3)
@@ -79,7 +79,6 @@ def crawl_fanpage_reels(driver, page_url, num_of_scroll=2):
             reel_info['comments_count'] = driver.find_element(By.XPATH, "//div[@aria-label=\"Bình luận\"]/../following-sibling::div[1]").text.strip()
             reel_info['shares'] = driver.find_element(By.XPATH, "//div[@aria-label=\"Chia sẻ\"]/../following-sibling::div[1]").text.strip()
 
-            save_to_json(reel_info, f"info/{time.strftime('%d%m%Y')}/reel", f"{reel_info['reel_id']}.json")
             reel_comment_button = driver.find_elements(By.XPATH, "//div[@role='button' and contains(@aria-label, 'Bình luận')]")
             # comment_list = list()
             comment_id_set = set()
@@ -112,7 +111,8 @@ def crawl_fanpage_reels(driver, page_url, num_of_scroll=2):
                             reel_info['post_time'] = post_time[0].text.strip()
                         else:
                             reel_info['post_time'] = None
-                            
+
+                save_to_json(reel_info, f"info/{time.strftime('%d%m%Y')}/reel/reel_info", f"{page_id}_{reel_info['reel_id']}.json")
                 scrollable_zone = driver.find_elements(By.XPATH, "//div[@role='complementary']")
                 scrollable_element = scrollable_zone[0].find_elements(By.XPATH, "./div[1]/div[1]/div")
                 if scrollable_element:
@@ -159,7 +159,7 @@ def crawl_fanpage_reels(driver, page_url, num_of_scroll=2):
                         if comment_id not in comment_id_set:
                             comment_id_set.add(comment_id)
                             # comment_list.append(comment_info)
-                            save_to_json(comment_info, f"info/{time.strftime('%d%m%Y')}/reel/comment", f"{reel_info['reel_id']}_{comment_info['comment_id']}.json")
+                            save_to_json(comment_info, f"info/{time.strftime('%d%m%Y')}/reel/comment", f"{page_id}_{reel_info['reel_id']}_{comment_info['comment_id']}.json")
             # reel_info['comments_count_crawl'] = len(comment_list)
             # reel_info['comments'] = comment_list
             # reels.append(reel_info)
