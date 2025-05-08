@@ -1,6 +1,6 @@
 import time
 from fanpage_crawler import crawl_fanpage_info
-from post_crawler import crawl_posts
+from post_crawler import crawl_posts, dev_crawl_vid
 from reel_crawler import crawl_fanpage_reels
 from selenium.webdriver.chrome.options import Options
 from selenium import webdriver
@@ -67,7 +67,8 @@ if __name__ == "__main__":
         print(f"\n🔍 Crawling {kol['name']}")
 
         time.sleep(3.5)
-        posts = crawl_posts(driver, kol['url'])
+        # posts = crawl_posts(driver, kol['url'])
+        vid = dev_crawl_vid(driver, kol['url'])
         # info = crawl_fanpage_info(driver, kol['url'])
         # reels = crawl_fanpage_reels(driver, kol['url'])
 
@@ -75,6 +76,7 @@ if __name__ == "__main__":
             # "profile": info,
             # "reels": reels,
             # "posts": posts,
+            "vid": vid,
         }
 
         save_to_json(result, "info", f"{kol['name'].replace(' ', '_')}demo.json")

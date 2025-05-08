@@ -99,6 +99,20 @@ def crawl_fanpage_reels(driver, page_url, num_of_scroll=2):
                     else:
                         print("Comment buttons not found")
                 time.sleep(3)
+
+                first_comment = driver.find_elements(By.XPATH, ".//div[contains(@aria-label, 'Bình luận dưới tên')]")
+                if first_comment:
+                    first_comment = first_comment[0]
+                    time_anchor = first_comment.find_elements(By.XPATH, ".//a[contains(@href, 'reel') and contains(@href, 'comment_id')]")
+                    if time_anchor:
+                        ActionChains(driver).move_to_element(time_anchor[-1]).perform()
+                        time.sleep(2.5)
+                        post_time = driver.find_elements(By.XPATH, "//span[contains(text(), 'Tháng') and contains(text(), 'lúc')]")
+                        if post_time:
+                            reel_info['post_time'] = post_time[0].text.strip()
+                        else:
+                            reel_info['post_time'] = None
+                            
                 scrollable_zone = driver.find_elements(By.XPATH, "//div[@role='complementary']")
                 scrollable_element = scrollable_zone[0].find_elements(By.XPATH, "./div[1]/div[1]/div")
                 if scrollable_element:
@@ -128,7 +142,7 @@ def crawl_fanpage_reels(driver, page_url, num_of_scroll=2):
                                 user_url = anchor_infor.split("?")[0]
                                 comment_id = anchor_infor.split("?")[1].split("&")[0].lstrip('comment_id=')
                             comment_info['user_url'] = user_url
-                            comment_info['comment_id'] = decode_comment_base64(comment_id)
+                            reel_id, comment_info['comment_id'] = decode_comment_base64(comment_id)
                             comment_info['user_name'] = comment_anchor[1].text.strip()
                             comment_text = comment_anchor[1].find_elements(By.XPATH, "./ancestor::span[2]/following-sibling::div")
                             if comment_text:

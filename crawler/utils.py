@@ -24,8 +24,13 @@ def decode_comment_base64(comment_str):
     try:
         comment_str = urllib.parse.unquote(comment_str)
         decoded = base64.b64decode(comment_str).decode("utf-8")
-        match = re.search(r'comment:\d+_(\d+)', decoded)
-        return match.group(1) if match else None
+        match = re.search(r'comment:(\d+)_(\d+)', decoded)
+        if match:
+            post_id = match.group(1)
+            comment_id = match.group(2)
+            return post_id, comment_id
+        else:
+            return None, None
     except Exception as e:
         print(f"Decode error: {e}")
-        return None
+        return None, None
