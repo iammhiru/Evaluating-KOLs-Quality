@@ -12,14 +12,14 @@ from utils import save_to_json
 load_dotenv()
 
 kol_list = [
-    # {
-    #     "name": "Trinh Phạm",
-    #     "url": "https://www.facebook.com/profile.php?id=100044592212208"
-    # },
     {
-        "name": "Châu Bùi",
-        "url": "https://www.facebook.com/chaubui.official"
+        "name": "Trinh Phạm",
+        "url": "https://www.facebook.com/profile.php?id=100044592212208"
     },
+    # {
+    #     "name": "Châu Bùi",
+    #     "url": "https://www.facebook.com/chaubui.official"
+    # },
     # {
     #     "name": "Đen Vâu",
     #     "url": "https://www.facebook.com/denvau"
@@ -48,7 +48,7 @@ if __name__ == "__main__":
     options.add_experimental_option('useAutomationExtension', False)
 
     options.add_argument(r"--user-data-dir=C:/UserData/selenium_profile")
-    options.add_argument("--headless=new")
+    # options.add_argument("--headless=new")
     driver = webdriver.Chrome(service=Service("E:\chromedriver-win64\chromedriver.exe"), options=options)
     driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
         "source": """
@@ -68,8 +68,8 @@ if __name__ == "__main__":
 
         time.sleep(3.5)
         page_id = crawl_fanpage_info(driver, kol['url'])
-        posts = crawl_posts(driver, kol['url'], page_id, 150)
-        reels = crawl_fanpage_reels(driver, kol['url'], page_id, 5)
+        posts = crawl_posts(driver, kol['url'], page_id, 20)
+        # reels = crawl_fanpage_reels(driver, kol['url'], page_id, 1)
         print(f"✅ Đã lưu dữ liệu {kol['name']}")
 
     driver.quit()

@@ -50,7 +50,6 @@ def crawl_fanpage_reels(driver, page_url, page_id, num_of_scroll=2):
         reels_view = dict()
 
         for _ in range(num_of_scroll):
-            time.sleep(2.6)
             reels_elements = driver.find_elements(By.XPATH, "//a[contains(@href, '/reel/')]")
             for reel in reels_elements:
                 reel_id = reel.get_attribute("href").split('?')[0]
@@ -58,7 +57,7 @@ def crawl_fanpage_reels(driver, page_url, page_id, num_of_scroll=2):
                 reels_view[reel_id.split("/")[-2]] = reel_view
                 checked_reels_id.add(reel_id)
             driver.execute_script("window.scrollBy(0, 350);")
-            time.sleep(3)
+            time.sleep(3.5)
 
         for reel in checked_reels_id:
             reel_info = dict()

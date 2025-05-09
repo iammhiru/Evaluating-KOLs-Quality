@@ -3,7 +3,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import NoSuchElementException, TimeoutException, StaleElementReferenceException, ElementClickInterceptedException
+from selenium.common.exceptions import TimeoutException, ElementClickInterceptedException
 import time
 import re
 import random
@@ -33,7 +33,7 @@ def crawl_posts(driver, page_url, page_id, num_of_scroll=50):
             for link in all_links:
                 try:
                     url = link.get_attribute("href")
-                    if page_url not in url:
+                    if page_url not in url and 'story_fbid' not in url and 'videos' not in url:
                         continue
                     else:
                         if 'story_fbid' in url:
@@ -42,7 +42,7 @@ def crawl_posts(driver, page_url, page_id, num_of_scroll=50):
                         else:
                             url = url.split("?")[0]
                         list_urls.add(url)
-                except (StaleElementReferenceException, Exception) as e:
+                except (Exception) as e:
                     print(f"Error processing link: {e}")
                     continue
         
