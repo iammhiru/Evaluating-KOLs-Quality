@@ -57,7 +57,7 @@ def crawl_fanpage_reels(driver, page_url, page_id, num_of_scroll=2):
                 reels_view[reel_id.split("/")[-2]] = reel_view
                 checked_reels_id.add(reel_id)
             driver.execute_script("window.scrollBy(0, 350);")
-            time.sleep(3.5)
+            time.sleep(random.uniform(4, 5))
 
         for reel in checked_reels_id:
             reel_info = dict()
@@ -104,7 +104,7 @@ def crawl_fanpage_reels(driver, page_url, page_id, num_of_scroll=2):
                     time_anchor = first_comment.find_elements(By.XPATH, ".//a[contains(@href, 'reel') and contains(@href, 'comment_id')]")
                     if time_anchor:
                         ActionChains(driver).move_to_element(time_anchor[-1]).perform()
-                        time.sleep(2.5)
+                        time.sleep(random.uniform(3, 5))
                         post_time = driver.find_elements(By.XPATH, "//span[contains(text(), 'Tháng') and contains(text(), 'lúc')]")
                         if post_time:
                             reel_info['post_time'] = post_time[0].text.strip()
@@ -116,16 +116,19 @@ def crawl_fanpage_reels(driver, page_url, page_id, num_of_scroll=2):
                 scrollable_element = scrollable_zone[0].find_elements(By.XPATH, "./div[1]/div[1]/div")
                 if scrollable_element:
                     scrollable_element = scrollable_element[0]
-                    while True:
+                    ran = random.randint(200, 350)
+                    temp = 0
+                    while True and temp < ran:
                         more_comment_button = driver.find_elements(By.XPATH, ".//div[@role='button' and contains(., 'Xem thêm bình luận')]")
                         if more_comment_button:
                             driver.execute_script("arguments[0].click();", more_comment_button[0])
                             time.sleep(random.uniform(3, 4))
+                            temp += 1
                         else:
                             break
 
                     driver.execute_script("arguments[0].scrollTop += 300", scrollable_element)
-                    time.sleep(2)
+                    time.sleep(random.uniform(3, 4))
                     comment_elements = driver.find_elements(By.XPATH, ".//div[contains(@aria-label, 'Bình luận dưới tên')]")
                     for comment in comment_elements:
                         comment_info = dict()
