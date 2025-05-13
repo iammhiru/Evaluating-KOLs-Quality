@@ -57,7 +57,7 @@ def crawl_fanpage_reels(driver, page_url, page_id, num_of_scroll=2):
                 reels_view[reel_id.split("/")[-2]] = reel_view
                 checked_reels_id.add(reel_id)
             driver.execute_script("window.scrollBy(0, 350);")
-            time.sleep(random.uniform(4, 5))
+            time.sleep(random.uniform(3, 3.5))
 
         for reel in checked_reels_id:
             reel_info = dict()
@@ -96,20 +96,7 @@ def crawl_fanpage_reels(driver, page_url, page_id, num_of_scroll=2):
                         time.sleep(2)
                     else:
                         print("Comment buttons not found")
-                time.sleep(3)
-
-                first_comment = driver.find_elements(By.XPATH, ".//div[contains(@aria-label, 'Bình luận dưới tên')]")
-                if first_comment:
-                    first_comment = first_comment[0]
-                    time_anchor = first_comment.find_elements(By.XPATH, ".//a[contains(@href, 'reel') and contains(@href, 'comment_id')]")
-                    if time_anchor:
-                        ActionChains(driver).move_to_element(time_anchor[-1]).perform()
-                        time.sleep(random.uniform(3, 5))
-                        post_time = driver.find_elements(By.XPATH, "//span[contains(text(), 'Tháng') and contains(text(), 'lúc')]")
-                        if post_time:
-                            reel_info['post_time'] = post_time[0].text.strip()
-                        else:
-                            reel_info['post_time'] = None
+                time.sleep(2)
 
                 save_to_json(reel_info, f"info/{time.strftime('%d%m%Y')}/reel/reel_info", f"{page_id}_{reel_info['reel_id']}.json")
                 scrollable_zone = driver.find_elements(By.XPATH, "//div[@role='complementary']")
@@ -122,7 +109,7 @@ def crawl_fanpage_reels(driver, page_url, page_id, num_of_scroll=2):
                         more_comment_button = driver.find_elements(By.XPATH, ".//div[@role='button' and contains(., 'Xem thêm bình luận')]")
                         if more_comment_button:
                             driver.execute_script("arguments[0].click();", more_comment_button[0])
-                            time.sleep(random.uniform(3, 4))
+                            time.sleep(random.uniform(2, 3))
                             temp += 1
                         else:
                             break
@@ -130,6 +117,19 @@ def crawl_fanpage_reels(driver, page_url, page_id, num_of_scroll=2):
                     driver.execute_script("arguments[0].scrollTop += 300", scrollable_element)
                     time.sleep(random.uniform(3, 4))
                     comment_elements = driver.find_elements(By.XPATH, ".//div[contains(@aria-label, 'Bình luận dưới tên')]")
+
+                    first_comment = comment_elements[-1]
+                    if first_comment:
+                        time_anchor = first_comment.find_elements(By.XPATH, ".//a[contains(@href, 'reel') and contains(@href, 'comment_id')]")
+                        if time_anchor:
+                            ActionChains(driver).move_to_element(time_anchor[-1]).perform()
+                            time.sleep(random.uniform(3, 5))
+                            post_time = driver.find_elements(By.XPATH, "//span[contains(text(), 'Tháng') and contains(text(), 'lúc')]")
+                            if post_time:
+                                reel_info['post_time'] = post_time[0].text.strip()
+                            else:
+                                reel_info['post_time'] = None
+                                
                     for comment in comment_elements:
                         comment_info = dict()
                         comment_anchor = comment.find_elements(By.XPATH, ".//a[contains(@href, 'comment_id')]")
