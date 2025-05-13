@@ -1,9 +1,6 @@
-facebook-page-scraper
 selenium
 undetected-chromedriver
 python-dotenv
-beautifulsoup4
-facebook-scraper
 pandas
 lxml_html_clean
-playwright
+confluent-kafka
