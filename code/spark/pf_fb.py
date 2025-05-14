@@ -12,6 +12,7 @@ spark = SparkSession.builder \
 
 
 raw_schema = StructType([
+    StructField("url", StringType()),
     StructField("name", StringType()),
     StructField("followers_count", StringType()),
     StructField("following_count", StringType()),
@@ -65,6 +66,7 @@ create_date_cleaned = when(
 ).otherwise(lit("2010-01-01").cast("date"))
 
 df_cleaned = df_json.select(
+    col("url"),
     col("name"),
     followers_count_cleaned.alias("followers_count"),
     col("category"),

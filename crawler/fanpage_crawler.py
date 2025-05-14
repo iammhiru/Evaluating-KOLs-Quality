@@ -33,7 +33,7 @@ def crawl_fanpage_info(driver, page_url):
             return {}
         
         info = {}
-
+        info['url'] = page_url
         info['name'] = safe_get("//div[@role='main']//h1")
         info['followers_count'] = safe_get("//a[contains(@href, 'followers')]")
         info['following_count'] = safe_get("//a[contains(@href, 'following')]") 

@@ -63,6 +63,7 @@ def crawl_fanpage_reels(driver, page_url, page_id, num_of_scroll=2):
             reel_info = dict()
             driver.get(reel)
             time.sleep(random.uniform(2.8, 3.6))
+            reel_info['url'] = reel
             reel_info['reel_id'] = reel.split("/")[-2]
             reel_info['views'] = reels_view[reel_info['reel_id']]
             reel_content = driver.find_element(By.XPATH, "//div[@aria-label=\"Thẻ trước đó\"]/following-sibling::div[1]")
@@ -118,17 +119,18 @@ def crawl_fanpage_reels(driver, page_url, page_id, num_of_scroll=2):
                     time.sleep(random.uniform(3, 4))
                     comment_elements = driver.find_elements(By.XPATH, ".//div[contains(@aria-label, 'Bình luận dưới tên')]")
 
-                    first_comment = comment_elements[-1]
-                    if first_comment:
-                        time_anchor = first_comment.find_elements(By.XPATH, ".//a[contains(@href, 'reel') and contains(@href, 'comment_id')]")
-                        if time_anchor:
-                            ActionChains(driver).move_to_element(time_anchor[-1]).perform()
-                            time.sleep(random.uniform(3, 5))
-                            post_time = driver.find_elements(By.XPATH, "//span[contains(text(), 'Tháng') and contains(text(), 'lúc')]")
-                            if post_time:
-                                reel_info['post_time'] = post_time[0].text.strip()
-                            else:
-                                reel_info['post_time'] = None
+                    if comment_elements:
+                        first_comment = comment_elements[-1]
+                        if first_comment:
+                            time_anchor = first_comment.find_elements(By.XPATH, ".//a[contains(@href, 'reel') and contains(@href, 'comment_id')]")
+                            if time_anchor:
+                                ActionChains(driver).move_to_element(time_anchor[-1]).perform()
+                                time.sleep(random.uniform(3, 5))
+                                post_time = driver.find_elements(By.XPATH, "//span[contains(text(), 'Tháng') and contains(text(), 'lúc')]")
+                                if post_time:
+                                    reel_info['post_time'] = post_time[0].text.strip()
+                                else:
+                                    reel_info['post_time'] = None
                                 
                     for comment in comment_elements:
                         comment_info = dict()

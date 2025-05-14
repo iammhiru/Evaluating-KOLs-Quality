@@ -5,7 +5,6 @@ from pyspark.sql.functions import (
 )
 from pyspark.sql.types import *
 
-# === Helper function ===
 def parse_count_with_suffix(col_expr):
     num = regexp_replace(regexp_extract(col_expr, r"([\d,\.]+)", 1), ",", ".").cast("double")
     text = lower(col_expr)
@@ -14,14 +13,12 @@ def parse_count_with_suffix(col_expr):
                  .otherwise(1)
     return when(col_expr.rlike(r"\d"), (num * multiplier).cast("long")).otherwise(lit(0))
 
-# === Spark session ===
 spark = (SparkSession.builder
     .appName("kol-comment-stream")
     .master("spark://spark-master:7077")
     .config("spark.jars.packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.3.1")
     .getOrCreate())
 
-# =================== kol-comment ======================
 comment_schema = StructType([
     StructField("user_url", StringType()),
     StructField("comment_id", StringType()),
