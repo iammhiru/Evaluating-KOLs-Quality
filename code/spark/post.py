@@ -1,9 +1,10 @@
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import (
     col, from_json, regexp_extract, regexp_replace, lower, when, lit,
-    to_timestamp, expr, current_timestamp, rand, floor, date_sub, to_date
+    to_timestamp, expr, rand, floor, date_sub, to_date, current_timestamp, row_number
 )
 from pyspark.sql.types import *
+from pyspark.sql.window import Window
 
 def parse_count_with_suffix(col_expr):
     num = regexp_replace(regexp_extract(col_expr, r"([\d,\.]+)", 1), ",", ".").cast("double")
@@ -16,19 +17,29 @@ def parse_count_with_suffix(col_expr):
            ).otherwise(lit(0))
 
 def parse_plain_number(col_expr):
-    cleaned = regexp_replace(col_expr, "\.", "")
+    cleaned = regexp_replace(col_expr, "\\.", "")
     return when(cleaned.rlike(r"^\d+$"), cleaned.cast("long")).otherwise(lit(0))
 
 spark = (SparkSession.builder
-    .appName("kol-all-stream")
+    .appName("kol-all-stream-iceberg")
     .master("spark://spark-master:7077")
-    .config("spark.jars.packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.3.1")
+    .config("spark.sql.extensions", "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions")
+    .config("spark.jars.packages",
+        "org.apache.spark:spark-sql-kafka-0-10_2.12:3.3.1," 
+        "org.apache.iceberg:iceberg-spark-runtime-3.3_2.12:1.7.2," 
+        "org.apache.iceberg:iceberg-hive-runtime:1.7.2") 
+    .config("spark.sql.iceberg.handle-timestamp-without-timezone", "true")
+    .config("spark.sql.catalog.hive_catalog", "org.apache.iceberg.spark.SparkCatalog")
+    .config("spark.sql.catalog.hive_catalog.catalog-impl", "org.apache.iceberg.hive.HiveCatalog")
+    .config("spark.sql.catalog.hive_catalog.uri", "thrift://hive-metastore:9083")
+    .config("spark.sql.catalog.hive_catalog.warehouse", "hdfs://namenode:9000/user/hive/warehouse")
     .getOrCreate())
 
 
-
+# ==================== STREAM: PROFILE ====================
 raw_schema = StructType([
     StructField("name", StringType()),
+    StructField("url", StringType()),
     StructField("followers_count", StringType()),
     StructField("following_count", StringType()),
     StructField("verified_account", BooleanType()),
@@ -56,9 +67,17 @@ df_raw = spark.readStream.format("kafka") \
     .option("failOnDataLoss", "false") \
     .load()
 
-df_json = df_raw.selectExpr("CAST(value AS STRING) as json_str") \
-    .select(from_json(col("json_str"), raw_schema).alias("data")) \
-    .select("data.*")
+df_raw = df_raw.selectExpr(
+    "CAST(value AS STRING) as json_str",
+    "timestamp AS kafka_ts"
+)
+
+df_json = df_raw.select(
+    from_json(col("json_str"), raw_schema).alias("data"),
+    col("kafka_ts")
+).select("data.*", "kafka_ts")
+
+df_json = df_json.withColumn("record_ts", col("kafka_ts"))
 
 followers_count_cleaned = when(
     col("followers_count").rlike(r"(?i)\d"), 
@@ -81,8 +100,9 @@ create_date_cleaned = when(
     )
 ).otherwise(lit("2010-01-01").cast("date"))
 
-df_cleaned = df_json.select(
+profile_clean = df_json.select(
     col("name"),
+    col("url"),
     followers_count_cleaned.alias("followers_count"),
     col("category"),
     col("contact.Email").alias("email_contact"),
@@ -94,17 +114,36 @@ df_cleaned = df_json.select(
     col("social_links.Instagram").alias("instagram"),
     col("social_links.Threads").alias("threads"),
     col("page_id"),
-    create_date_cleaned.alias("create_date")
+    create_date_cleaned.alias("create_date"),
+    col("record_ts"),
+    col("kafka_ts"),
 )
 
-df_cleaned.writeStream \
-    .format("parquet") \
-    .option("path", "hdfs://namenode:9000/user/stream/kol-profile/") \
-    .option("checkpointLocation", "hdfs://namenode:9000/user/spark/checkpoint/kol-profile/") \
-    .outputMode("append") \
-    .trigger(processingTime="1 minute") \
-    .start() \
+def upsert_profiles(batch_df, batch_id):
+    w = Window.partitionBy("page_id").orderBy(batch_df.record_ts.desc())
+    dedup = (batch_df
+             .withColumn("_rn", row_number().over(w))
+             .filter(col("_rn") == 1)
+             .drop("_rn"))
+    dedup.createOrReplaceGlobalTempView("updates_profiles")
 
+    spark.sql("""
+        MERGE INTO hive_catalog.db1.kol_profile_stream AS target
+        USING global_temp.updates_profiles AS source
+          ON target.page_id = source.page_id
+        WHEN MATCHED AND source.record_ts > target.record_ts
+          THEN UPDATE SET *
+        WHEN NOT MATCHED
+          THEN INSERT *
+    """)
+
+profile_clean.writeStream \
+    .trigger(processingTime="1 minute") \
+    .foreachBatch(upsert_profiles) \
+    .option("checkpointLocation", "hdfs://namenode:9000/iceberg/checkpoints/kol_profile_stream_upsert/") \
+    .start()
+
+# ==================== STREAM: POST ====================
 post_schema = StructType([
     StructField("url", StringType()),
     StructField("type", StringType()),
@@ -114,7 +153,9 @@ post_schema = StructType([
     StructField("post_time", StringType()),
     StructField("content", StringType()),
     StructField("total_comment", StringType()),
+    StructField("total_view", StringType()),
     StructField("total_share", StringType()),
+    StructField("type", StringType()),
     StructField("emotes", StructType([
         StructField("Tất cả", StringType()),
         StructField("Thích", StringType()),
@@ -134,8 +175,15 @@ post_raw = spark.readStream.format("kafka") \
     .option("failOnDataLoss", "false") \
     .load()
 
-post_df = post_raw.selectExpr("CAST(value AS STRING) as json_str") \
-    .select(from_json(col("json_str"), post_schema).alias("d")).select("d.*")
+post_raw = post_raw.selectExpr(
+    "CAST(value AS STRING) as json_str",
+    "timestamp AS kafka_ts"
+)
+
+post_df = post_raw.select(
+    from_json(col("json_str"), post_schema).alias("d"),
+    col("kafka_ts")
+).select("d.*", "kafka_ts")
 
 post_clean = post_df.select(
     col("url"),
@@ -143,6 +191,7 @@ post_clean = post_df.select(
     col("base58_id"),
     col("post_id"),
     col("page_id"),
+    col("type"),
     when(
         col("post_time").rlike(r"\d{1,2} Tháng \d{1,2}, \d{4} lúc \d{1,2}:\d{2}"),
         to_timestamp(regexp_extract(col("post_time"), r"(\d{1,2} Tháng \d{1,2}, \d{4} lúc \d{1,2}:\d{2})", 1),
@@ -151,22 +200,26 @@ post_clean = post_df.select(
     col("content"),
     parse_count_with_suffix(col("total_comment")).alias("total_comment"),
     parse_count_with_suffix(col("total_share")).alias("total_share"),
-    parse_plain_number(col("emotes.`Tất cả`"))
-        .alias("total_emotes"),
+    parse_count_with_suffix(col("total_view")).alias("total_view"),
+    parse_plain_number(col("emotes.`Tất cả`")).alias("total_emotes"),
     parse_count_with_suffix(col("emotes.`Thích`")).alias("likes"),
     parse_count_with_suffix(col("emotes.`Yêu thích`")).alias("loves"),
     parse_count_with_suffix(col("emotes.`Thương thương`")).alias("care"),
     parse_count_with_suffix(col("emotes.Haha")).alias("haha"),
     parse_count_with_suffix(col("emotes.Wow")).alias("wow"),
     parse_count_with_suffix(col("emotes.Buồn")).alias("sad"),
-    parse_count_with_suffix(col("emotes.`Phẫn nộ`"))
-    .alias("angry")
+    parse_count_with_suffix(col("emotes.`Phẫn nộ`")).alias("angry"),
+    col("kafka_ts")
 )
 
-post_clean.writeStream.format("parquet") \
-    .option("path", "hdfs://namenode:9000/user/stream/kol-post/") \
-    .option("checkpointLocation", "hdfs://namenode:9000/user/spark/checkpoint/kol-post/") \
-    .outputMode("append").trigger(processingTime="1 minute").start()
+post_clean = post_clean.withColumn("record_ts", col("kafka_ts"))
+
+post_clean.writeStream \
+    .format("iceberg") \
+    .outputMode("append") \
+    .option("checkpointLocation", "hdfs://namenode:9000/iceberg/checkpoints/kol_post_stream/") \
+    .trigger(processingTime="1 minute") \
+    .toTable("hive_catalog.db1.kol_post_stream")
 
 reel_schema = StructType([
     StructField("url", StringType()),
@@ -189,8 +242,15 @@ reel_raw = spark.readStream.format("kafka") \
     .option("failOnDataLoss", "false") \
     .load()
 
-reel_df = reel_raw.selectExpr("CAST(value AS STRING) as json_str") \
-    .select(from_json(col("json_str"), reel_schema).alias("d")).select("d.*")
+reel_raw = reel_raw.selectExpr(
+    "CAST(value AS STRING) as json_str",
+    "timestamp AS kafka_ts"
+)
+
+reel_df = reel_raw.select(
+    from_json(col("json_str"), reel_schema).alias("d"),
+    col("kafka_ts")
+).select("d.*", "kafka_ts")
 
 reel_clean = reel_df.select(
     col("url"),
@@ -207,12 +267,17 @@ reel_clean = reel_df.select(
         to_timestamp(regexp_extract(col("post_time"), r"(\d{1,2} Tháng \d{1,2}, \d{4} lúc \d{1,2}:\d{2})", 1),
                      "d 'Tháng' M, yyyy 'lúc' H:mm")
     ).otherwise(date_sub(current_timestamp(), floor(rand() * 3 + 5).cast("int"))).alias("post_time"),
-    when(col("type").isNull(), lit("reel")).otherwise(col("type")).alias("type")
+    when(col("type").isNull(), lit("reel")).otherwise(col("type")).alias("type"),
+    col("kafka_ts")
 )
 
-reel_clean.writeStream.format("parquet") \
-    .option("path", "hdfs://namenode:9000/user/stream/kol-reel/") \
-    .option("checkpointLocation", "hdfs://namenode:9000/user/spark/checkpoint/kol-reel/") \
-    .outputMode("append").trigger(processingTime="1 minute").start()
+reel_clean = reel_clean.withColumn("record_ts", col("kafka_ts"))
+
+reel_clean.writeStream \
+    .format("iceberg") \
+    .outputMode("append") \
+    .option("checkpointLocation", "hdfs://namenode:9000/iceberg/checkpoints/kol_reel_stream/") \
+    .trigger(processingTime="1 minute") \
+    .toTable("hive_catalog.db1.kol_reel_stream")
 
 spark.streams.awaitAnyTermination()

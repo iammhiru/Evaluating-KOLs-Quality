@@ -2,8 +2,8 @@ import time
 import random
 import argparse
 from fanpage_crawler import crawl_fanpage_info
-from post_crawler import crawl_posts, crawl_posts_fix_comment_count
-from reel_crawler import crawl_fanpage_reels
+from post_crawler import crawl_posts, crawl_posts_without_comment
+from reel_crawler import crawl_fanpage_reels, crawl_reel_without_comment
 from selenium.webdriver.chrome.options import Options
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
@@ -11,12 +11,36 @@ from concurrent.futures import ThreadPoolExecutor
 
 kol_list = [
     # {
-    #     "name": "Hiếu thứ hai",
-    #     "url": "https://www.facebook.com/HIEUTHUHAIOFFICIAL"
+    #     "name": "Giang Ơi",
+    #     "url": "https://www.facebook.com/giangoivlog"
+    # },
+    # {
+    #     "name": "Bích Phương",
+    #     "url": "https://www.facebook.com/bichphuongofficial"
+    # },
+    # {
+    #     "name": "AMEE",
+    #     "url": "https://www.facebook.com/ameest319"
+    # },
+    # {
+    #     "name": "Low G",
+    #     "url": "https://web.facebook.com/low.to.the.g"
+    # },
+    # {
+    #     "name": "Phương Ly",
+    #     "url": "https://www.facebook.com/phuongly.official"
+    # },
+    # {
+    #     "name": "Khánh Vy",
+    #     "url": "https://web.facebook.com/khanhvyofficial"
     # },
     {
-        "name": "Salim",
-        "url": "https://www.facebook.com/salim21.official"
+        "name": "Hồ Ngọc Hà",
+        "url": "https://www.facebook.com/casihongocha"
+    },
+    {
+        "name": "Ninh Tito",
+        "url": "https://www.facebook.com/ninheating"
     },
 ]
 
@@ -25,9 +49,10 @@ def split_kol_list(kols, n):
     return [kols[i * k + min(i, m):(i + 1) * k + min(i + 1, m)] for i in range(n)]
 
 profile_dirs = [
-    "C:/UserData/new_pf1",
-    # "C:/UserData/new_pf2",
-    # "C:/UserData/selenium_profile",
+    # "C:/UserData/new_pf1",
+    # "C:/UserData/new_pf2", 
+    # "C:/UserData/new_pf3", 
+    "C:/UserData/selenium_profile",
 ]
 
 def setup_driver(profile_dir):
@@ -60,8 +85,10 @@ def crawl_worker(profile_dir, kol_sublist, post_limit=10, reel_limit=1):
         print(f"\n[{profile_dir}] Crawling {kol['name']}")
         try:
             page_id = crawl_fanpage_info(driver, kol['url'])
-            crawl_posts_fix_comment_count(driver, kol['url'], page_id, post_limit)
-            crawl_fanpage_reels(driver, kol['url'], page_id, reel_limit)
+            # crawl_posts(driver, kol['url'], page_id, post_limit)
+            # crawl_fanpage_reels(driver, kol['url'], page_id, reel_limit)
+            crawl_posts_without_comment(driver, kol['url'], page_id, post_limit)
+            crawl_reel_without_comment(driver, kol['url'], page_id, reel_limit)
             print(f"✅ {kol['name']} done")
         except Exception as e:
             print(f"❌ Error with {kol['name']}: {e}")
@@ -73,11 +100,11 @@ if __name__ == "__main__":
         description="Crawl KOL fanpage with custom limits"
     )
     parser.add_argument(
-        "--post_limit", type=int, default=10,
+        "--post_limit", type=int, default=120,
         help="Số bài viết tối đa mỗi KOL"
     )
     parser.add_argument(
-        "--reel_limit", type=int, default=5,
+        "--reel_limit", type=int, default=14,
         help="Số reel tối đa mỗi KOL"
     )
     args = parser.parse_args()

@@ -4,6 +4,8 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 import time
 import random
+import traceback
+import sys
 from utils import save_to_json
 
 def crawl_fanpage_info(driver, page_url):
@@ -103,5 +105,8 @@ def crawl_fanpage_info(driver, page_url):
         save_to_json(info, f"info/{time.strftime('%d%m%Y')}/profile", f"{info['page_id'].replace(' ', '_')}.json")
         return info['page_id']
     except Exception as e:
-        print(f"❌ Lỗi khi crawl thông tin fanpage: {e}")
+        print("Lỗi xảy ra:")
+        traceback.print_exc()
+        _, _, tb = sys.exc_info()
+        print(f"Lỗi ở dòng: {tb.tb_lineno}")
         return None

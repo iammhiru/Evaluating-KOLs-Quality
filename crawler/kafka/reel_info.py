@@ -4,7 +4,19 @@ from confluent_kafka import Producer
 
 KAFKA_BROKERS = os.getenv("KAFKA_BROKERS", "kafka-broker-1:29092")
 KAFKA_TOPIC = os.getenv("KAFKA_TOPIC", "kol-reel-topic")
-SOURCE_DIR = os.path.join(os.getcwd(), "10052025", "reel", "reel_info")
+SOURCE_DIR = [
+    # os.path.join(os.getcwd(), "10052025", "reel", "reel_info"),
+    # os.path.join(os.getcwd(), "11052025", "reel", "reel_info"),
+    # os.path.join(os.getcwd(), "12052025", "reel", "reel_info"),
+    # os.path.join(os.getcwd(), "13052025", "reel", "reel_info"),
+    # os.path.join(os.getcwd(), "14052025", "reel", "reel_info"),
+    # os.path.join(os.getcwd(), "15052025", "reel", "reel_info"),
+    # os.path.join(os.getcwd(), "16052025", "reel", "reel_info"),
+    # os.path.join(os.getcwd(), "17052025", "reel", "reel_info"),
+    # os.path.join(os.getcwd(), "19052025", "reel", "reel_info"),
+    # os.path.join(os.getcwd(), "21052025", "reel", "reel_info"),
+    os.path.join(os.getcwd(), "20052025", "reel", "reel_info"),    
+]
 
 producer = Producer({
     'bootstrap.servers': KAFKA_BROKERS,
@@ -52,11 +64,16 @@ def process_file(file_path):
 
 def produce_reel_files():
     count = 0
-    for file_name in os.listdir(SOURCE_DIR):
-        full_path = os.path.join(SOURCE_DIR, file_name)
-        if os.path.isfile(full_path):
-            if process_file(full_path):
-                count += 1
+    for folder in SOURCE_DIR:
+        if not os.path.exists(folder):
+            print(f"⚠️ Source directory does not exist: {folder}")
+            continue
+
+        for file_name in os.listdir(folder):
+            full_path = os.path.join(folder, file_name)
+            if os.path.isfile(full_path):
+                if process_file(full_path):
+                    count += 1
 
     producer.flush()
     print(f"🔁 Done. Total reel files sent: {count}")

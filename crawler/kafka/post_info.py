@@ -5,8 +5,8 @@ from confluent_kafka import Producer
 KAFKA_BROKERS = os.getenv("KAFKA_BROKERS", "kafka-broker-1:29092")
 KAFKA_TOPIC = os.getenv("KAFKA_TOPIC", "kol-post-topic")
 SOURCE_DIRS = [
-    os.path.join(os.getcwd(), "10052025", "post", "post_info"),
-    os.path.join(os.getcwd(), "10052025", "video", "post_info")
+    os.path.join(os.getcwd(), "20052025", "post", "post_info"),
+    os.path.join(os.getcwd(), "20052025", "video", "post_info"),
 ]
 
 producer = Producer({
