@@ -3,25 +3,21 @@ import json
 from confluent_kafka import Producer
 
 KAFKA_BROKERS = os.getenv("KAFKA_BROKERS", "kafka-broker-1:29092")
-KAFKA_TOPIC = os.getenv("KAFKA_TOPIC", "kol-reel-topic")
-SOURCE_DIR = [
-    # os.path.join(os.getcwd(), "10052025", "reel", "reel_info"),
-    # os.path.join(os.getcwd(), "11052025", "reel", "reel_info"),
-    # os.path.join(os.getcwd(), "12052025", "reel", "reel_info"),
-    # os.path.join(os.getcwd(), "13052025", "reel", "reel_info"),
-    # os.path.join(os.getcwd(), "14052025", "reel", "reel_info"),
-    # os.path.join(os.getcwd(), "15052025", "reel", "reel_info"),
-    # os.path.join(os.getcwd(), "16052025", "reel", "reel_info"),
-    # os.path.join(os.getcwd(), "17052025", "reel", "reel_info"),
-    # os.path.join(os.getcwd(), "19052025", "reel", "reel_info"),
-    # os.path.join(os.getcwd(), "21052025", "reel", "reel_info"),
-    os.path.join(os.getcwd(), "20052025", "reel", "reel_info"),    
-]
+KAFKA_TOPIC   = os.getenv("KAFKA_TOPIC",   "kol-reel-topic")
+
+base_info = os.path.join(os.getcwd(), "info")
+SOURCE_DIRS = []
+if os.path.isdir(base_info):
+    for date_dir in os.listdir(base_info):
+        date_path = os.path.join(base_info, date_dir)
+        reel_info_dir = os.path.join(date_path, "reel", "reel_info")
+        if os.path.isdir(reel_info_dir):
+            SOURCE_DIRS.append(reel_info_dir)
 
 producer = Producer({
     'bootstrap.servers': KAFKA_BROKERS,
-    'linger.ms': 10,
-    'acks': 'all'
+    'linger.ms':        10,   
+    'acks':             'all',  
 })
 
 def delivery_report(err, msg):
@@ -41,14 +37,13 @@ def process_file(file_path):
         return False
 
     page_id, reel_id = key.split("_", 1)
-
     try:
         with open(file_path, "r", encoding="utf-8") as f:
             data = json.load(f)
 
         data["page_id"] = page_id
         data["reel_id"] = reel_id
-        data["type"] = "reel"
+        data["type"]    = "reel"
 
         producer.produce(
             topic=KAFKA_TOPIC,
@@ -56,28 +51,25 @@ def process_file(file_path):
             value=json.dumps(data, ensure_ascii=False),
             callback=delivery_report
         )
+        producer.poll(0)
         return True
 
     except Exception as e:
         print(f"❌ Error in {file_name}: {e}")
         return False
 
-def produce_reel_files():
-    count = 0
-    for folder in SOURCE_DIR:
-        if not os.path.exists(folder):
-            print(f"⚠️ Source directory does not exist: {folder}")
-            continue
-
-        for file_name in os.listdir(folder):
-            full_path = os.path.join(folder, file_name)
-            if os.path.isfile(full_path):
-                if process_file(full_path):
-                    count += 1
+def produce_reel_info():
+    total = 0
+    print("🚀 Producing reel_info from folders:")
+    for folder in SOURCE_DIRS:
+        print(f" - {folder}")
+        for fn in os.listdir(folder):
+            full = os.path.join(folder, fn)
+            if os.path.isfile(full) and process_file(full):
+                total += 1
 
     producer.flush()
-    print(f"🔁 Done. Total reel files sent: {count}")
+    print(f"🔁 Done. Total reel_info files sent: {total}")
 
 if __name__ == "__main__":
-    print(f"🚀 Producing reel_info from folder: {SOURCE_DIR}")
-    produce_reel_files()
+    produce_reel_info()

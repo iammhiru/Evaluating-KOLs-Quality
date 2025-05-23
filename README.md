@@ -102,3 +102,16 @@ helm install superset ./kubernetes/superset
 ```sh
 helm install airflow ./kubernetes/airflow
 ```
+
+### 4. Init system
+
+```sh
+docker exec -it hive-metastore bash
+hive -e "CREATE DATABASE IF NOT EXISTS db1 LOCATION 'hdfs://namenode:9000/user/hive/warehouse/db1.db';"
+```
+
+```sh
+docker exec -it trino bash
+trino
+
+```

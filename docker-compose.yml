@@ -1,4 +1,4 @@
-version: '3'
+version: '2.4'
 
 # x-airflow-common:
 #   &airflow-common
@@ -76,6 +76,8 @@ services:
     restart: always
     ports: 
       - 8090:8090
+    volumes:
+      - ./info:/app/info
     networks:
       - kol-evaluate
 
@@ -94,6 +96,8 @@ services:
       - ./services/hadoop/hadoop.env
     networks:
       - kol-evaluate
+    cpus: 0.2
+    mem_limit: 1g
 
   datanode1:
     image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
@@ -110,7 +114,8 @@ services:
       - ./services/hadoop/hadoop.env
     networks:
       - kol-evaluate
-
+    cpus: 0.2
+    mem_limit: 1g
   resourcemanager:
     image: bde2020/hadoop-resourcemanager:2.0.0-hadoop3.2.1-java8
     container_name: resourcemanager
@@ -121,7 +126,8 @@ services:
       - ./services/hadoop/hadoop.env
     networks:
       - kol-evaluate
-
+    cpus: 0.2
+    mem_limit: 1g
   nodemanager1:
     image: bde2020/hadoop-nodemanager:2.0.0-hadoop3.2.1-java8
     container_name: nodemanager1
@@ -132,7 +138,8 @@ services:
       - ./services/hadoop/hadoop.env
     networks:
       - kol-evaluate
-
+    cpus: 0.2
+    mem_limit: 1g
   historyserver:
     image: bde2020/hadoop-historyserver:2.0.0-hadoop3.2.1-java8
     container_name: historyserver
@@ -145,7 +152,8 @@ services:
       - ./services/hadoop/hadoop.env
     networks:
       - kol-evaluate
-
+    cpus: 0.2
+    mem_limit: 1g
   spark-master:
     image: bitnami/spark:3.3
     container_name: spark-master
@@ -169,6 +177,8 @@ services:
       - ./jars:/opt/bitnami/iceberg-jars
     networks:
       - kol-evaluate
+    cpus: 1
+    mem_limit: 2g     
 
   spark-worker:
     image: bitnami/spark:3.3
@@ -190,7 +200,8 @@ services:
       - ./jars:/opt/bitnami/iceberg-jars
     networks:
       - kol-evaluate
-
+    cpus: 1
+    mem_limit: 3g
   zookeeper:
     image: confluentinc/cp-zookeeper:7.3.2
     environment:
@@ -201,6 +212,8 @@ services:
     restart: always
     networks:
       - kol-evaluate
+    cpus: 0.5
+    mem_limit: 1g
 
   kafka-broker-1:
     image: confluentinc/cp-kafka:7.3.2
@@ -225,6 +238,8 @@ services:
       - zookeeper
     networks:
       - kol-evaluate
+    cpus: 0.2
+    mem_limit: 1g
 
   kafka-broker-2:
     image: confluentinc/cp-kafka:7.3.2
@@ -249,7 +264,8 @@ services:
       - zookeeper
     networks:
       - kol-evaluate
-
+    cpus: 0.2
+    mem_limit: 1g
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
     container_name: kafka-ui
@@ -300,25 +316,48 @@ services:
       - hive-metastore
     networks:
       - kol-evaluate
+    cpus: 1.5
+    mem_limit: 3g
 
-  # superset:
-  #   image: apache/superset:latest
-  #   container_name: superset
-  #   ports:
-  #     - "8088:8088"
-  #   environment:
-  #     - SUPERSET_LOAD_EXAMPLES=yes
-  #     - SUPERSET_SECRET_KEY=supersecret
-  #   restart: always
-  #   depends_on:
-  #     - postgres
-  #     - trino
-  #   volumes:
-  #     - superset_home:/app/superset_home
-  #     - ./superset/superset-init.sh:/app/run-superset.sh
-  #   networks:
-  #     - kol-evaluate
+  superset-db:
+    image: postgres:13
+    container_name: superset-db
+    environment:
+      POSTGRES_USER: superset
+      POSTGRES_PASSWORD: superset
+      POSTGRES_DB: superset
+    volumes:
+      - superset_db:/var/lib/postgresql/data
+    networks:
+      - kol-evaluate
 
+  superset-redis:
+    image: redis:6-alpine
+    container_name: superset-redis
+    networks:
+      - kol-evaluate
+
+  superset:
+    image: superset-trino:1.0
+    container_name: superset
+    restart: always
+    ports:
+      - "8088:8088"        
+    environment:
+      SUPERSET_ENV: production
+      DATABASE_URL: postgresql+psycopg2://superset:superset@superset-db:5432/superset
+      REDIS_URL: redis://superset-redis:6379/0
+      SUPERSET_SECRET_KEY: hieupham2003
+      SUPERSET_LOAD_EXAMPLES: 'yes'
+    volumes:
+      - ./superset/superset-init.sh:/app/run_superset.sh
+      - superset_home:/app/superset_home  
+    entrypoint: ["/app/run_superset.sh"]
+    depends_on:
+      - superset-db
+      - superset-redis
+    networks:
+      - kol-evaluate
 volumes:
   hadoop_namenode:
   hadoop_datanode1:
@@ -332,7 +371,8 @@ volumes:
   postgres_db_volume:
   hive_metastore_postgresql:
   metastore_db:
-  # superset_home:
+  superset_db:
+  superset_home:
 
 networks:
   kol-evaluate:

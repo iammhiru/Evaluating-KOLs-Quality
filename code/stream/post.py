@@ -155,7 +155,6 @@ post_schema = StructType([
     StructField("total_comment", StringType()),
     StructField("total_view", StringType()),
     StructField("total_share", StringType()),
-    StructField("type", StringType()),
     StructField("emotes", StructType([
         StructField("Tất cả", StringType()),
         StructField("Thích", StringType()),
@@ -191,7 +190,6 @@ post_clean = post_df.select(
     col("base58_id"),
     col("post_id"),
     col("page_id"),
-    col("type"),
     when(
         col("post_time").rlike(r"\d{1,2} Tháng \d{1,2}, \d{4} lúc \d{1,2}:\d{2}"),
         to_timestamp(regexp_extract(col("post_time"), r"(\d{1,2} Tháng \d{1,2}, \d{4} lúc \d{1,2}:\d{2})", 1),

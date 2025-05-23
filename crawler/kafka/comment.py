@@ -3,17 +3,25 @@ import json
 from confluent_kafka import Producer
 
 KAFKA_BROKERS = os.getenv("KAFKA_BROKERS", "kafka-broker-1:29092")
-KAFKA_TOPIC = os.getenv("KAFKA_TOPIC", "kol-comment-topic")
-SOURCE_DIRS = [
-    os.path.join(os.getcwd(), "10052025", "reel", "comment"),
-    os.path.join(os.getcwd(), "10052025", "post", "comment"),
-    os.path.join(os.getcwd(), "10052025", "video", "comment")
-]
+KAFKA_TOPIC   = os.getenv("KAFKA_TOPIC",   "kol-comment-topic")
+
+BASE_INFO = os.path.join(os.getcwd(), "info")
+SOURCE_DIRS = []
+if os.path.isdir(BASE_INFO):
+    for date_dir in os.listdir(BASE_INFO):
+        date_path = os.path.join(BASE_INFO, date_dir)
+        if not os.path.isdir(date_path):
+            continue
+        for post_type in ("post", "video", "reel"):
+            comment_dir = os.path.join(date_path, post_type, "comment")
+            if os.path.isdir(comment_dir):
+                SOURCE_DIRS.append(comment_dir)
 
 producer = Producer({
-    'bootstrap.servers': KAFKA_BROKERS,
-    'linger.ms': 10,
-    'acks': 'all'
+    'bootstrap.servers':             KAFKA_BROKERS,
+    'linger.ms':                     10,
+    'acks':                          'all',
+    'queue.buffering.max.messages':  200000, 
 })
 
 def delivery_report(err, msg):
@@ -27,7 +35,7 @@ def process_file(file_path, post_type):
     if not file_name.endswith(".json"):
         return False
 
-    key = os.path.splitext(file_name)[0] 
+    key = os.path.splitext(file_name)[0]
     parts = key.split("_")
     if len(parts) != 3:
         print(f"⚠️ Skipped malformed filename: {file_name}")
@@ -39,18 +47,23 @@ def process_file(file_path, post_type):
         with open(file_path, "r", encoding="utf-8") as f:
             data = json.load(f)
 
-        data["page_id"] = page_id
-        data["post_id"] = post_id
-        data["comment_id"] = comment_id
-        data["type"] = "comment"
-        data["post_type"] = post_type
+        data.update({
+            "page_id":    page_id,
+            "post_id":    post_id,
+            "comment_id": comment_id,
+            "type":       "comment",
+            "post_type":  post_type,
+        })
 
-        producer.produce(
-            topic=KAFKA_TOPIC,
-            key=key,
-            value=json.dumps(data, ensure_ascii=False),
-            callback=delivery_report
-        )
+        if data["comment_text"] != "" and data["comment_text"] is not None:
+            data["comment_text"] = data["comment_text"].replace("\n", " ")
+            producer.produce(
+                topic=KAFKA_TOPIC,
+                key=key,
+                value=json.dumps(data, ensure_ascii=False),
+                callback=delivery_report
+            )
+            producer.poll(0)  # phục vụ callback, tránh buffer full
         return True
 
     except Exception as e:
@@ -72,9 +85,8 @@ def produce_comment_files():
 
         for file_name in os.listdir(folder):
             full_path = os.path.join(folder, file_name)
-            if os.path.isfile(full_path):
-                if process_file(full_path, post_type):
-                    count += 1
+            if os.path.isfile(full_path) and process_file(full_path, post_type):
+                count += 1
 
     producer.flush()
     print(f"🔁 Done. Total comment files sent: {count}")
