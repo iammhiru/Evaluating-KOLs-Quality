@@ -1,7 +1,7 @@
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import (
-    col, from_json, regexp_extract, regexp_replace, lower, when, lit,
-    to_timestamp, expr, rand, floor, date_sub, to_date, current_timestamp, row_number
+    col, from_json, regexp_extract, regexp_replace, lower, when, lit, split,
+    rand, floor, date_sub, to_date, to_timestamp, current_date, row_number
 )
 from pyspark.sql.types import *
 from pyspark.sql.window import Window
@@ -144,6 +144,7 @@ profile_clean.writeStream \
     .start()
 
 # ==================== STREAM: POST ====================
+
 post_schema = StructType([
     StructField("url", StringType()),
     StructField("type", StringType()),
@@ -184,6 +185,11 @@ post_df = post_raw.select(
     col("kafka_ts")
 ).select("d.*", "kafka_ts")
 
+post_df = post_df.withColumn(
+    "date_nums",
+    split(regexp_replace(col("post_time"), "[^0-9]", " "), " +")
+)
+
 post_clean = post_df.select(
     col("url"),
     when(col("type").isNull(), lit("post")).otherwise(col("type")).alias("type"),
@@ -191,10 +197,19 @@ post_clean = post_df.select(
     col("post_id"),
     col("page_id"),
     when(
-        col("post_time").rlike(r"\d{1,2} Tháng \d{1,2}, \d{4} lúc \d{1,2}:\d{2}"),
-        to_timestamp(regexp_extract(col("post_time"), r"(\d{1,2} Tháng \d{1,2}, \d{4} lúc \d{1,2}:\d{2})", 1),
-                     "d 'Tháng' M, yyyy 'lúc' H:mm")
-    ).otherwise(date_sub(current_timestamp(), floor(rand() * 3 + 5).cast("int"))).alias("post_time"),
+        # chỉ parse khi còn đúng “d Tháng M, yyyy lúc HH:mm”
+        regexp_replace(col("post_time"), r"^[^,]*,\s*", "")
+          .rlike(r"\d{1,2}\sTháng\s\d{1,2},\s\d{4}\slúc\s\d{1,2}:\d{2}"),
+        to_timestamp(
+            # clean_ts: “5 Tháng 11, 2024 lúc 00:18”
+            regexp_replace(col("post_time"), r"^[^,]*,\s*", ""),
+            # pattern này sẽ parse ra TimestampType
+            "d 'Tháng' M, yyyy 'lúc' H:mm"
+        )
+    ).otherwise(
+        # fallback: ngày random trong khoảng 5–7 ngày trước, cast sang timestamp lúc 00:00:00
+        date_sub(current_date(), floor(rand() * 3 + 5).cast("int")).cast("timestamp")
+    ).alias("post_time"),
     col("content"),
     parse_count_with_suffix(col("total_comment")).alias("total_comment"),
     parse_count_with_suffix(col("total_share")).alias("total_share"),
@@ -250,6 +265,11 @@ reel_df = reel_raw.select(
     col("kafka_ts")
 ).select("d.*", "kafka_ts")
 
+reel_df = reel_df.withColumn(
+    "date_nums",
+    split(regexp_replace(col("post_time"), "[^0-9]", " "), " +")
+)
+
 reel_clean = reel_df.select(
     col("url"),
     col("page_id"),
@@ -261,10 +281,19 @@ reel_clean = reel_df.select(
     parse_count_with_suffix(col("comments_count")).alias("comments"),
     parse_count_with_suffix(col("shares")).alias("share"),
     when(
-        col("post_time").rlike(r"\d{1,2} Tháng \d{1,2}, \d{4} lúc \d{1,2}:\d{2}"),
-        to_timestamp(regexp_extract(col("post_time"), r"(\d{1,2} Tháng \d{1,2}, \d{4} lúc \d{1,2}:\d{2})", 1),
-                     "d 'Tháng' M, yyyy 'lúc' H:mm")
-    ).otherwise(date_sub(current_timestamp(), floor(rand() * 3 + 5).cast("int"))).alias("post_time"),
+        # chỉ parse khi còn đúng “d Tháng M, yyyy lúc HH:mm”
+        regexp_replace(col("post_time"), r"^[^,]*,\s*", "")
+          .rlike(r"\d{1,2}\sTháng\s\d{1,2},\s\d{4}\slúc\s\d{1,2}:\d{2}"),
+        to_timestamp(
+            # clean_ts: “5 Tháng 11, 2024 lúc 00:18”
+            regexp_replace(col("post_time"), r"^[^,]*,\s*", ""),
+            # pattern này sẽ parse ra TimestampType
+            "d 'Tháng' M, yyyy 'lúc' H:mm"
+        )
+    ).otherwise(
+        # fallback: ngày random trong khoảng 5–7 ngày trước, cast sang timestamp lúc 00:00:00
+        date_sub(current_date(), floor(rand() * 3 + 5).cast("int")).cast("timestamp")
+    ).alias("post_time"),
     when(col("type").isNull(), lit("reel")).otherwise(col("type")).alias("type"),
     col("kafka_ts")
 )

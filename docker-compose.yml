@@ -1,75 +1,66 @@
 version: '2.4'
 
-# x-airflow-common:
-#   &airflow-common
-#   image: airflow
-#   environment:
-#     - AIRFLOW__CORE__EXECUTOR=LocalExecutor
-#     - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
-#     - AIRFLOW__CORE__FERNET_KEY=FB0o_zt4e3Ziq3LdUUO7F2Z95cvFFx16hU8jTeR1ASM=
-#     - AIRFLOW__CORE__LOAD_EXAMPLES=False
-#     - AIRFLOW__CORE__LOGGING_LEVEL=INFO
-#   depends_on:
-#     - postgres
-#   volumes:
-#     - airflow_logs:/opt/airflow/logs
-#     - airflow_plugins:/opt/airflow/plugins
-#     - airflow_scripts:/opt/airflow/scripts
-#   networks:
-#     - kol-evaluate
+x-airflow-common: &airflow-common
+  image: hieupt_airflow:1.3
+  environment:
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-postgres:5432/airflow
+    AIRFLOW__CORE__LOAD_EXAMPLES: 'False'
+    AIRFLOW__WEBSERVER__SECRET_KEY: my-super-secret-key
+    AIRFLOW_CONN_SPARK_DEFAULT: "spark://spark-master:7077"
+    SPARK_HOME: /opt/spark
+    JAVA_HOME: /usr/lib/jvm/java-11-openjdk-amd64
+  volumes:
+    - ./airflow/dags:/opt/airflow/dags
+    - ./airflow/plugins:/opt/airflow/plugins
+  networks:
+    - kol-evaluate
 
 services:
-  # postgres:
-  #   image: postgres
-  #   container_name: postgres
-  #   environment:
-  #     - POSTGRES_USER=airflow
-  #     - POSTGRES_PASSWORD=airflow
-  #     - POSTGRES_DB=airflow
-  #     - POSTGRES_PORT=5432
-  #   ports:
-  #     - 5432:5432
-  #   restart: always
-  #   volumes:
-  #     - postgres_db_volume:/var/lib/postgresql/data
-  #   networks:
-  #     - kol-evaluate
+  airflow-postgres:
+    image: postgres:13
+    container_name: airflow-postgres
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - postgres_db:/var/lib/postgresql/data
+    networks:
+      - kol-evaluate
 
-  # airflow-init:
-  #   << : *airflow-common
-  #   container_name: airflow-init
-  #   entrypoint: /bin/bash
-  #   restart: on-failure
-  #   command:
-  #     - -c
-  #     - airflow db init &&
-  #       airflow users create
-  #         --role Admin
-  #         --username airflow
-  #         --password airflow
-  #         --email airflow@airflow.com
-  #         --firstname airflow
-  #         --lastname airflow
-  #   networks:
-  #     - kol-evaluate
+  airflow-init:
+    <<: *airflow-common
+    container_name: airflow-init
+    restart: "no"
+    depends_on:
+      - airflow-postgres
+      - spark-master
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        airflow db init &&
+        airflow users create --username admin --firstname Admin --lastname User --role Admin --email admin@example.com --password admin || true &&
+        airflow connections add spark_default --conn-uri "spark://spark-master:7077" --description "Spark master" || true
 
-  # airflow-webserver:
-  #   << : *airflow-common
-  #   container_name: airflow-webserver
-  #   ports:
-  #     - 8085:8080
-  #   restart: always
-  #   command: airflow webserver
-  #   networks:
-  #     - kol-evaluate
+  airflow-webserver:
+    <<: *airflow-common
+    container_name: airflow-webserver
+    restart: always
+    depends_on:
+      - airflow-init
+    ports:
+      - "8085:8080"
+    command: webserver
 
-  # airflow-scheduler:
-  #   << : *airflow-common
-  #   container_name: airflow-scheduler
-  #   restart: always
-  #   command: airflow scheduler
-  #   networks:
-  #     - kol-evaluate
+  airflow-scheduler:
+    <<: *airflow-common
+    container_name: airflow-scheduler
+    restart: always
+    depends_on:
+      - airflow-webserver
+    command: scheduler
   test_kp:
     image: hieupt_crawler:1.2
     container_name: test_kp
@@ -155,7 +146,7 @@ services:
     cpus: 0.2
     mem_limit: 1g
   spark-master:
-    image: bitnami/spark:3.3
+    image: hieupt_spark:25.11
     container_name: spark-master
     restart: always
     environment:
@@ -181,7 +172,7 @@ services:
     mem_limit: 2g     
 
   spark-worker:
-    image: bitnami/spark:3.3
+    image: hieupt_spark:25.11
     container_name: spark-worker
     restart: always
     environment:
@@ -200,8 +191,8 @@ services:
       - ./jars:/opt/bitnami/iceberg-jars
     networks:
       - kol-evaluate
-    cpus: 1
-    mem_limit: 3g
+    cpus: 3
+    mem_limit: 12g
   zookeeper:
     image: confluentinc/cp-zookeeper:7.3.2
     environment:
@@ -365,9 +356,7 @@ volumes:
   zookeeper-data:
   kafka-broker-1-data:
   kafka-broker-2-data:
-  # airflow_logs:
-  # airflow_plugins:
-  # airflow_scripts:
+  postgres_db:
   postgres_db_volume:
   hive_metastore_postgresql:
   metastore_db:

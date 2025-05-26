@@ -257,7 +257,7 @@ def crawl_reel_without_comment(driver, page_url, page_id, num_of_scroll=2):
                 scrollable_element = scrollable_zone[0].find_elements(By.XPATH, "./div[1]/div[1]/div")
                 if scrollable_element:
                     scrollable_element = scrollable_element[0]
-                    ran = 1
+                    ran = 10
                     temp = 0
                     while True and temp < ran:
                         more_comment_button = driver.find_elements(By.XPATH, ".//div[@role='button' and contains(., 'Xem thêm bình luận')]")
