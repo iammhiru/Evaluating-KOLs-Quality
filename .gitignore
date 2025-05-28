@@ -3,3 +3,6 @@ info/
 docs/
 data/
 crawler/*052025/*
+*.log
+*.pyc
+airflow/logs/

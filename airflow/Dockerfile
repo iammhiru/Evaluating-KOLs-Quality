@@ -1,28 +1,47 @@
-FROM apache/airflow:2.5.1-python3.9
+# airflow/Dockerfile
+
+# 1) Base trên spark-custom image (Iceberg + PhoBERT đã cài sẵn)
+FROM hieupt_spark_fin:1.1
 
 USER root
 
-# 1) Java & procps
-RUN apt-get update && \
-    apt-get install -y openjdk-11-jre-headless procps wget && \
-    rm -rf /var/lib/apt/lists/*
+# 2) Cài Airflow core + Spark provider theo constraints chính thức
+ARG AIRFLOW_VERSION=2.7.1
+ARG PYTHON_VERSION=3.10
+ARG CONSTRAINT_URL="https://raw.githubusercontent.com/apache/airflow/constraints-${AIRFLOW_VERSION}/constraints-${PYTHON_VERSION}.txt"
 
-# 2) Spark client (để có spark-submit)
-ARG SPARK_VERSION=3.3.2
-ARG HADOOP_VERSION=3
-RUN wget -q "https://archive.apache.org/dist/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop${HADOOP_VERSION}.tgz" \
-    && tar xzf spark-${SPARK_VERSION}-bin-hadoop${HADOOP_VERSION}.tgz -C /opt \
-    && mv /opt/spark-${SPARK_VERSION}-bin-hadoop${HADOOP_VERSION} /opt/spark \
-    && rm spark-${SPARK_VERSION}-bin-hadoop${HADOOP_VERSION}.tgz
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends python3-pip python3-venv curl \
+ && rm -rf /var/lib/apt/lists/* \
+ && python3 -m pip install --upgrade pip \
+ && python3 -m pip install \
+      "apache-airflow==${AIRFLOW_VERSION}" \
+      --constraint "${CONSTRAINT_URL}" \
+ && python3 -m pip install \
+      "apache-airflow-providers-apache-spark" \
+      --constraint "${CONSTRAINT_URL}"
 
-# 3) Env cho Java & Spark
-ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64 \
-    SPARK_HOME=/opt/spark \
-    PATH=/opt/spark/bin:/usr/local/bin:${PATH}
+RUN python3 -m pip install --no-cache-dir psycopg2-binary
 
-# 4) Cài Spark Provider và pyspark cho Airflow
-RUN pip install --no-cache-dir \
-      apache-airflow-providers-apache-spark \
-      pyspark
+# 3) Tạo cấu trúc thư mục Airflow
+ENV AIRFLOW_HOME=/opt/airflow \
+    SPARK_HOME=/opt/bitnami/spark
+RUN mkdir -p /opt/airflow/dags \
+             /opt/airflow/logs \
+             /opt/airflow/plugins \
+    && chown -R 1001:1001 /opt/airflow
 
-USER airflow
+# 4) Copy mã DAGs/plugins và entrypoint
+COPY ./dags       $AIRFLOW_HOME/dags
+COPY ./plugins    $AIRFLOW_HOME/plugins
+# Copy entrypoint mới vào đúng chỗ
+COPY entrypoint.sh /opt/airflow/entrypoint.sh
+RUN chmod +x /opt/airflow/entrypoint.sh
+ENV AIRFLOW__WEBSERVER__WEB_SERVER_PORT=8085
+
+# Chuyển lại user airflow nếu cần
+USER 1001
+
+# Đặt entrypoint
+ENTRYPOINT [ "/opt/airflow/entrypoint.sh" ]
+CMD ["webserver"]
