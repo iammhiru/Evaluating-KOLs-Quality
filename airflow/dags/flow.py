@@ -25,7 +25,7 @@ with DAG(
         task_id='run_sentiment_analysis',
         bash_command=(
             '$SPARK_HOME/bin/spark-submit '
-            '--master spark://localhost:7077 '
+            '--master spark://spark-master:7077 '
             '--deploy-mode client '
             '--conf spark.driver.cores=1 '
             '--conf spark.driver.memory=2g '
@@ -36,7 +36,7 @@ with DAG(
     )
 
     metric = BashOperator(
-        task_id='run_metric_computationfin',
+        task_id='run_metric_computation',
         bash_command=(
             '$SPARK_HOME/bin/spark-submit '
             '--master spark://spark-master:7077 '
@@ -49,5 +49,37 @@ with DAG(
         ),
     )
 
-    # Thiết lập thứ tự: sentiment → metric
-    sentiment >> metric
+    clear_post = BashOperator(
+        task_id='clear_kol_post_stream',
+        bash_command=(
+        'cd /opt/trino && '
+        './trino --server http://trino:8080 '
+        '--catalog iceberg --schema db1 '
+        '--user admin '
+        '--execute "TRUNCATE TABLE kol_v_monthly"'
+        )
+    )
+
+    clear_reel = BashOperator(
+        task_id='clear_kol_reel_stream',
+        bash_command=(
+        'cd /opt/trino && '
+        './trino --server http://trino:8080 '
+        '--catalog iceberg --schema db1 '
+        '--user admin '
+        '--execute "TRUNCATE TABLE kol_v_monthly"'
+        )
+    )
+
+    clear_comment = BashOperator(
+        task_id='clear_kol_comment_stream',
+        bash_command=(
+        'cd /opt/trino && '
+        './trino --server http://trino:8080 '
+        '--catalog iceberg --schema db1 '
+        '--user admin '
+        '--execute "TRUNCATE TABLE kol_v_monthly"'
+        )
+    )
+
+    sentiment >> metric >> [ clear_post, clear_reel, clear_comment ]

@@ -14,7 +14,7 @@ services:
       - kol-evaluate
 
   airflow-scheduler:
-    image: airflow_fin:1.6
+    image: spark_airflow:1.10
     container_name: airflow-scheduler
     depends_on:
       - airflow-db
@@ -32,7 +32,8 @@ services:
       - ./airflow/dags:/opt/airflow/dags
       - ./airflow/logs:/opt/airflow/logs
       - ./airflow/plugins:/opt/airflow/plugins
-      - ./spark/batch:/opt/bitnami/spark/ss
+      - ./airflow/batch:/opt/bitnami/spark/ss
+      - ./airflow/stream:/opt/bitnami/spark/sstream
     ports:
       - "7077:7077"   
       - "8070:8081"  
@@ -44,7 +45,7 @@ services:
           - spark-master
 
   airflow-web:
-    image: airflow_fin:1.6
+    image: spark_airflow:1.10
     container_name: airflow-web
     depends_on:
       - airflow-scheduler
