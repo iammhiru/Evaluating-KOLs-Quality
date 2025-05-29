@@ -249,7 +249,7 @@ def main():
         ).drop("minF", "maxF", "minE", "maxE", "F_norm", "E_norm", "S_norm") 
                                                                             
     results.write.format("iceberg").mode("overwrite").option("overwrite-mode","dynamic") \
-        .saveAsTable("hive_catalog.db1.kol_metrics_monthly_test_airflow")
+        .saveAsTable("hive_catalog.db1.kol_metrics_monthly_airflow_dev")
 
     spark.stop()
 

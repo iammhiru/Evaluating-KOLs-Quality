@@ -1,30 +1,5 @@
 version: '2.4'
 
-# x-airflow-common: &airflow-common
-#   image: hieupt_airflow_v2:29.3
-#   restart: always
-#   depends_on:
-#     - airflow-db
-#     - spark-master
-#   networks:
-#     kol-evaluate:
-#       aliases:
-#         - spark-driver
-#   volumes:
-#     - ./airflow/dags:/opt/airflow/dags
-#     - ./airflow/logs:/opt/airflow/logs
-#     - ./airflow/plugins:/opt/airflow/plugins
-#     - ./spark/batch:/opt/bitnami/spark/ss
-#   environment:
-#     # Switch SQL connection to the new [database] section to remove deprecation warnings
-#     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-db:5432/airflow
-#     # (you can keep the CORE setting too, but DATABASE is now preferred)
-#     AIRFLOW__CORE__EXECUTOR: LocalExecutor
-#     AIRFLOW__CORE__FERNET_KEY: 'ImeFH3ChVZm0DnuretIXbFDEl/KucRYMVGH4zEjCGGE='
-#     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'false'
-#     AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
-#     SPARK_HOME: /opt/bitnami/spark
-
 services:
   airflow-db:
     image: postgres:13
@@ -38,37 +13,56 @@ services:
     networks:
       - kol-evaluate
 
-  # 2) All-in-one Spark+Airflow
-  airflow:
-    image: airflow_fin:10.5
-    container_name: airflow
+  airflow-scheduler:
+    image: airflow_fin:1.6
+    container_name: airflow-scheduler
     depends_on:
       - airflow-db
+    command: ["scheduler"]
     environment:
-      # dùng LocalExecutor, connect tới Postgres ở trên
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
       AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-db:5432/airflow
       SPARK_MASTER_HOST: spark-master
       SPARK_MASTER_PORT: 7077
-      SPARK_WORKER_URL: spark://spark-master:7077
       SPARK_WORKER_MEMORY: 4G
       SPARK_WORKER_CORES: 3
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - ./airflow/logs:/opt/airflow/logs
       - ./airflow/plugins:/opt/airflow/plugins
+      - ./spark/batch:/opt/bitnami/spark/ss
     ports:
-      - "8085:8085"  # Airflow web UI
-      - "7077:7077"  # Spark master RPC
-      - "8070:8081"  # Spark worker UI (nếu cần)
-      - "8080:8080"  # Spark master UI (trùng với Airflow web; bạn có thể đổi Airflow web port nếu muốn)
+      - "7077:7077"   
+      - "8070:8081"  
+      - "8080:8080"  
     entrypoint: ["/opt/airflow/entrypoint.sh"]
     networks:
       kol-evaluate:
         aliases:
           - spark-master
+
+  airflow-web:
+    image: airflow_fin:1.6
+    container_name: airflow-web
+    depends_on:
+      - airflow-scheduler
+    command: ["webserver"]
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-db:5432/airflow
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/plugins:/opt/airflow/plugins
+    entrypoint: ["/opt/airflow/entrypoint.sh"]
+    ports:
+      - "8085:8085"   # Airflow web UI
+    networks:
+      kol-evaluate:
 
   test_kp:
     image: hieupt_crawler:1.2
@@ -154,62 +148,6 @@ services:
       - kol-evaluate
     cpus: 0.2
     mem_limit: 1g
-  # spark-master:
-  #   image: hieupt_spark_withaf:25.11
-  #   container_name: spark-master
-  #   restart: always
-  #   environment:
-  #     # - SPARK_MODE=master
-  #     # - SPARK_MASTER_HOST=spark-master
-  #     # - SPARK_MASTER_PORT=7077
-  #     # - SPARK_WEBUI_PORT=8080
-  #     - SPARK_MODE=master
-  #     - SPARK_WORKER_INSTANCES=1
-  #     - SPARK_WORKER_CORES=1
-  #     - SPARK_WORKER_MEMORY=2g
-  #     - SPARK_SUBMIT_ARGS=--jars /opt/bitnami/iceberg-jars/iceberg-spark-runtime.jar,/opt/bitnami/iceberg-jars/iceberg-hive-runtime.jar \
-  #       --conf spark.sql.catalog.spark_catalog=org.apache.iceberg.spark.SparkSessionCatalog \
-  #       --conf spark.sql.catalog.hadoop=org.apache.iceberg.spark.SparkCatalog \
-  #       --conf spark.sql.catalog.hadoop.type=hive \
-  #       --conf spark.sql.catalog.hadoop.uri=thrift://hive-metastore:9083 \
-  #       --conf spark.sql.catalog.hadoop.warehouse=/user/hive/warehouse
-  #   ports:
-  #     - "8080:8080"
-  #     - "7077:7077"
-  #   volumes:
-  #     - ./hadoop/hive-site.xml:/opt/bitnami/spark/conf/hive-site.xml
-  #     - ./jars:/opt/bitnami/iceberg-jars
-  #   networks:
-  #     - kol-evaluate
-  #   cpus: 1
-  #   mem_limit: 2g     
-
-  # spark-worker:
-  #   image: hieupt_spark_withaf:25.11
-  #   container_name: spark-worker
-  #   restart: always
-  #   environment:
-  #     - SPARK_MODE=worker
-  #     - SPARK_MASTER_URL=spark://spark-master:7077
-  #     - SPARK_WORKER_CORES=3
-  #     - SPARK_WORKER_MEMORY=3g
-  #     # - SPARK_MODE=worker
-  #     # - SPARK_MASTER=spark://spark-master:7077
-  #     - SPARK_SUBMIT_ARGS=--jars /opt/bitnami/iceberg-jars/iceberg-spark-runtime.jar,/opt/bitnami/iceberg-jars/iceberg-hive-runtime.jar \
-  #       --conf spark.sql.catalog.spark_catalog=org.apache.iceberg.spark.SparkSessionCatalog \
-  #       --conf spark.sql.catalog.hadoop=org.apache.iceberg.spark.SparkCatalog \
-  #       --conf spark.sql.catalog.hadoop.type=hive \
-  #       --conf spark.sql.catalog.hadoop.uri=thrift://hive-metastore:9083 \
-  #       --conf spark.sql.catalog.hadoop.warehouse=/user/hive/warehouse
-  #   depends_on:
-  #     - spark-master
-  #   volumes:
-  #     - ./hadoop/hive-site.xml:/opt/bitnami/spark/conf/hive-site.xml
-  #     - ./jars:/opt/bitnami/iceberg-jars
-  #   networks:
-  #     - kol-evaluate
-  #   cpus: 3
-  #   mem_limit: 12g
   zookeeper:
     image: confluentinc/cp-zookeeper:7.3.2
     environment:

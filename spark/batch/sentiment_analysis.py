@@ -40,11 +40,9 @@ spark = (
         .getOrCreate()
 )
 
-# lazy globals
 tokenizer = None
 model = None
 
-# schema cho UDF trả về struct 3 float
 score_schema = StructType([
     StructField("positive_rate", FloatType()),
     StructField("neutral_rate",  FloatType()),
@@ -53,7 +51,6 @@ score_schema = StructType([
 
 @pandas_udf(score_schema)
 def classify_sentiment_scores(texts: pd.Series) -> pd.DataFrame:
-    # đảm bảo get_default_device tồn tại
     import torch
     if not hasattr(torch, "get_default_device"):
         torch.get_default_device = lambda: torch.device("cpu")
@@ -78,8 +75,6 @@ def classify_sentiment_scores(texts: pd.Series) -> pd.DataFrame:
             probs = torch.softmax(logits, dim=-1).tolist()
 
         for p in probs:
-            # giả định id2label theo thứ tự ["NEGATIVE", "NEUTRAL", "POSITIVE"]
-            # nên p = [prob_NEG, prob_NEU, prob_POS]
             records.append({
                 "positive_rate": float(p[1]),
                 "neutral_rate":  float(p[2]),
@@ -88,14 +83,12 @@ def classify_sentiment_scores(texts: pd.Series) -> pd.DataFrame:
 
     return pd.DataFrame(records, index=texts.index)
 
-# 1. đọc raw
 raw = (
     spark.read.format("iceberg")
          .load("hive_catalog.db1.kol_comment_stream_raw")
          .select("post_id", "comment_id", "comment_text", "record_ts")
 )
 
-# 2. chỉ mới nhất mỗi comment
 latest = (
     raw
       .withColumn("rn", row_number().over(
@@ -104,9 +97,9 @@ latest = (
       ))
       .filter(col("rn") == 1)
       .select("post_id", "comment_text")
+      .limit(500)
 )
 
-# 3. tính xác suất, unpack struct thành 3 cột
 scored = (
     latest
       .withColumn("scores", classify_sentiment_scores(col("comment_text")))
@@ -136,13 +129,12 @@ summary = (
       .withColumn("record_year",    year_ts)
 )
 
-# ghi kết quả summary ra bảng mới
 (
     summary
       .write.format("iceberg")
       .mode("append")
       .option("overwrite-mode", "dynamic")
-      .saveAsTable("hive_catalog.db1.kol_comment_sentiment_summary")
+      .saveAsTable("hive_catalog.db1.kol_comment_sentiment_summary_airflow_dev")
 )
 
 spark.stop()
