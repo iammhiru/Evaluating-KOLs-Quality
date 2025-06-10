@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from airflow import DAG
+from airflow import DAG, macros
 from airflow.operators.bash import BashOperator
 
 default_args = {
@@ -15,9 +15,9 @@ with DAG(
     dag_id='spark_batch_month_flow',
     default_args=default_args,
     description='Chạy các Spark batch job trong thư mục spark/ss hàng tháng',
-    schedule_interval='0 2 1 * *',   
-    start_date=datetime(2025, 4, 1),
-    catchup=False,
+    schedule_interval='0 0 1 * *',
+    start_date=datetime(2023, 2, 1),
+    catchup=True,
     max_active_runs=1,
 ) as dag:
 
@@ -45,41 +45,43 @@ with DAG(
             '--conf spark.driver.memory=2g '
             '--conf spark.executor.cores=3 '
             '--conf spark.executor.memory=3g '
-            '$SPARK_HOME/ss/metric.py'
+            '$SPARK_HOME/ss/metric.py '
+            '--month {{ (execution_date - macros.timedelta(days=1)).month }} '
+            '--year  {{ (execution_date - macros.timedelta(days=1)).year }}'
         ),
     )
 
     clear_post = BashOperator(
         task_id='clear_kol_post_stream',
         bash_command=(
-        'cd /opt/trino && '
-        './trino --server http://trino:8080 '
-        '--catalog iceberg --schema db1 '
-        '--user admin '
-        '--execute "TRUNCATE TABLE kol_v_monthly"'
+            'cd /opt/trino && '
+            './trino --server http://trino:8080 '
+            '--catalog iceberg --schema db1 '
+            '--user admin '
+            '--execute "TRUNCATE TABLE kol_v_monthly"'
         )
     )
 
     clear_reel = BashOperator(
         task_id='clear_kol_reel_stream',
         bash_command=(
-        'cd /opt/trino && '
-        './trino --server http://trino:8080 '
-        '--catalog iceberg --schema db1 '
-        '--user admin '
-        '--execute "TRUNCATE TABLE kol_v_monthly"'
+            'cd /opt/trino && '
+            './trino --server http://trino:8080 '
+            '--catalog iceberg --schema db1 '
+            '--user admin '
+            '--execute "TRUNCATE TABLE kol_v_monthly"'
         )
     )
 
     clear_comment = BashOperator(
         task_id='clear_kol_comment_stream',
         bash_command=(
-        'cd /opt/trino && '
-        './trino --server http://trino:8080 '
-        '--catalog iceberg --schema db1 '
-        '--user admin '
-        '--execute "TRUNCATE TABLE kol_v_monthly"'
+            'cd /opt/trino && '
+            './trino --server http://trino:8080 '
+            '--catalog iceberg --schema db1 '
+            '--user admin '
+            '--execute "TRUNCATE TABLE kol_v_monthly"'
         )
     )
 
-    sentiment >> metric >> [ clear_post, clear_reel, clear_comment ]
+    sentiment >> metric >> [clear_post, clear_reel, clear_comment]

@@ -39,17 +39,17 @@ docker context use default
 #### 2.2 Create cluster
 
 ```sh
-minikube start --driver=docker --nodes=3 --cpus=2 --memory=6144 -p kol-system
+minikube start --driver=docker --nodes=3 --cpus=2 --memory=6144 -p kol-evaluate
 ```
 
 #### 2.3 Label node
 
 ```sh
-kubectl label node kol-system-m02 node-role.kubernetes.io/worker=worker & kubectl label nodes kol-system-m02 role=worker
+kubectl label node kol-evaluate-m02 node-role.kubernetes.io/worker=worker & kubectl label nodes kol-evaluate-m02 role=worker
 ```
 
 ```sh
-kubectl label node kol-system-m03 node-role.kubernetes.io/worker=worker & kubectl label nodes kol-system-m03 role=worker
+kubectl label node kol-evaluate-m03 node-role.kubernetes.io/worker=worker & kubectl label nodes kol-evaluate-m03 role=worker
 ```
 
 ### 3. Deploy
@@ -57,7 +57,7 @@ kubectl label node kol-system-m03 node-role.kubernetes.io/worker=worker & kubect
 #### 3.1 Create namespace
 
 ```sh
-kubectl create namespace kol-system & kubectl config set-context --current --namespace=kol-system
+kubectl create namespace kol-evaluate & kubectl config set-context --current --namespace=kol-evaluate
 ```
 
 #### 3.2 Deploy Hadoop

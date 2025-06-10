@@ -65,9 +65,9 @@ services:
     networks:
       kol-evaluate:
 
-  test_kp:
+  crawler:
     image: hieupt_crawler:1.2
-    container_name: test_kp
+    container_name: crawler
     restart: always
     ports: 
       - 8090:8090

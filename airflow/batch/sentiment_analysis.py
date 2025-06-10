@@ -134,7 +134,7 @@ summary = (
       .write.format("iceberg")
       .mode("append")
       .option("overwrite-mode", "dynamic")
-      .saveAsTable("hive_catalog.db1.kol_comment_sentiment_summary_airflow_dev")
+      .saveAsTable("hive_catalog.db1.kol_comment_sentiment_summary_dev")
 )
 
 spark.stop()

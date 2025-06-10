@@ -1,11 +1,26 @@
+import argparse
 from pyspark.sql import SparkSession
 from pyspark.sql.window import Window
 from pyspark.sql.functions import (
     col, sum, avg, lit, row_number, min as _min, max as _max,
-    sequence, explode, to_date, month, year, expr, when
+    month, year, when
 )
 
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Compute KOL metrics for a given month/year"
+    )
+    parser.add_argument("--month", type=int, required=True,
+                        help="Tháng cần xử lý (1-12)")
+    parser.add_argument("--year", type=int, required=True,
+                        help="Năm cần xử lý, ví dụ 2025")
+    return parser.parse_args()
+
 def main():
+    args = parse_args()
+    month_param = args.month
+    year_param  = args.year
+
     spark = (SparkSession.builder
         .appName("kol-metrics-monthly-batch")
         .config("spark.jars.packages",
@@ -23,24 +38,13 @@ def main():
     raw_reels = spark.read.format("iceberg").load("hive_catalog.db1.kol_reel_stream")
     comments = spark.read.format("iceberg").load("hive_catalog.db1.kol_comment_sentiment_summary").drop("total_comment")
 
-    months_df = spark.createDataFrame(
-        [("2023-01-01","2025-05-01")], ["start","end"]
-    ).select(
-        explode(
-            sequence(to_date(col("start")), to_date(col("end")), expr("interval 1 month"))
-        ).alias("month_date")
-    ).withColumn("month", month(col("month_date"))) \
-    .withColumn("year", year(col("month_date"))) \
-    .withColumn("month_of_year", month(col("month_date"))) \
-    .select("month","year","month_of_year") \
-
     profiles = raw_profiles.select(
         col("page_id"),
         col("name"),
         col("category"),
         col("followers_count"),
-    ).crossJoin(months_df)
-
+    ).withColumn("month", lit(month_param)) \
+    .withColumn("year", lit(year_param))
 
     posts = (
         raw_posts
@@ -247,10 +251,24 @@ def main():
             "kol_score",
             (col("F_norm") + col("E_norm") + col("S_norm")) / lit(3) * 100
         ).drop("minF", "maxF", "minE", "maxE", "F_norm", "E_norm", "S_norm") 
+    
+    results.filter(
+        (col("month") == month_param) & (col("year") == year_param)
+    )
                                                                             
-    results.write.format("iceberg").mode("overwrite").option("overwrite-mode","dynamic") \
-        .saveAsTable("hive_catalog.db1.kol_metrics_monthly_airflow_dev")
+    results.createOrReplaceTempView("src_df")
 
+    spark.sql(f"""
+    MERGE INTO hive_catalog.db1.kol_metrics_monthly_dev AS tgt
+    USING src_df AS src
+      ON tgt.page_id = src.page_id
+     AND tgt.month   = src.month
+     AND tgt.year    = src.year
+    WHEN MATCHED THEN
+      UPDATE SET *
+    WHEN NOT MATCHED THEN
+      INSERT *
+    """)
     spark.stop()
 
 if __name__ == "__main__":
