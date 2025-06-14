@@ -18,7 +18,7 @@ def call_flask_api():
 
     try:
         response = requests.post(url, json=payload, timeout=60)
-        response.raise_for_status()  # Raise exception nếu mã không phải 2xx
+        response.raise_for_status() 
 
         data = response.json()
         print("✅ API response:", data)
@@ -30,7 +30,7 @@ with DAG(
     dag_id='trigger_kol_crawler_api',
     default_args=default_args,
     schedule_interval='0 */2 * * *',
-    start_date=datetime(2025, 6, 18),
+    start_date=datetime(2025, 6, 10),
     catchup=False,
     tags=['kol', 'crawler']
 ) as dag:
