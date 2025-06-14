@@ -4,18 +4,7 @@ from confluent_kafka import Producer
 
 KAFKA_BROKERS = os.getenv("KAFKA_BROKERS", "kafka-broker-1:29092")
 KAFKA_TOPIC   = os.getenv("KAFKA_TOPIC",   "kol-comment-topic")
-
-BASE_INFO = os.path.join(os.getcwd(), "info")
-SOURCE_DIRS = []
-if os.path.isdir(BASE_INFO):
-    for date_dir in os.listdir(BASE_INFO):
-        date_path = os.path.join(BASE_INFO, date_dir)
-        if not os.path.isdir(date_path):
-            continue
-        for post_type in ("post", "video", "reel"):
-            comment_dir = os.path.join(date_path, post_type, "comment")
-            if os.path.isdir(comment_dir):
-                SOURCE_DIRS.append(comment_dir)
+BASE_INFO = os.path.abspath("info")
 
 producer = Producer({
     'bootstrap.servers':             KAFKA_BROKERS,
@@ -63,26 +52,17 @@ def process_file(file_path, post_type):
                 value=json.dumps(data, ensure_ascii=False),
                 callback=delivery_report
             )
-            producer.poll(0)  # phục vụ callback, tránh buffer full
+            producer.poll(0)
         return True
 
     except Exception as e:
         print(f"❌ Error in {file_name}: {e}")
         return False
 
-def produce_comment_files():
+def produce_comment_files(source_dirs):
     count = 0
-    for folder in SOURCE_DIRS:
-        if "post/comment" in folder:
-            post_type = "post"
-        elif "video/comment" in folder:
-            post_type = "video"
-        elif "reel/comment" in folder:
-            post_type = "reel"
-        else:
-            print(f"⚠️ Unknown folder type: {folder}")
-            continue
-
+    for folder, post_type in source_dirs:
+        print(f"📂 Processing: {folder} (as {post_type})")
         for file_name in os.listdir(folder):
             full_path = os.path.join(folder, file_name)
             if os.path.isfile(full_path) and process_file(full_path, post_type):
@@ -91,8 +71,18 @@ def produce_comment_files():
     producer.flush()
     print(f"🔁 Done. Total comment files sent: {count}")
 
+def main(current_timestamp):
+    source_dirs = []
+    for post_type in ("post", "video", "reel"):
+        comment_dir = os.path.join(BASE_INFO, str(current_timestamp), post_type, "comment")
+        if os.path.isdir(comment_dir):
+            source_dirs.append((comment_dir, post_type))
+
+    if not source_dirs:
+        print(f"⚠️ No comment folders found for timestamp: {current_timestamp}")
+    else:
+        produce_comment_files(source_dirs)
+
 if __name__ == "__main__":
-    print("🚀 Producing comment files from folders:")
-    for d in SOURCE_DIRS:
-        print(f"   - {d}")
-    produce_comment_files()
+    test_timestamp = "1749832796"
+    main(test_timestamp)

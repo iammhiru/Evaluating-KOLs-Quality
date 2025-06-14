@@ -2,7 +2,9 @@
 info/
 docs/
 data/
-crawler/*052025/*
+crawler/info/
+crawler/'/
 *.log
 *.pyc
 airflow/logs/
+selenium_profile/

@@ -1,58 +1,28 @@
 import time
+import json
 import random
 import argparse
 from fanpage_crawler import crawl_fanpage_info
-from post_crawler import crawl_posts, crawl_posts_v2, crawl_posts_without_comment
-from reel_crawler import crawl_fanpage_reels, crawl_reel_without_comment
+from post_crawler import crawl_posts
+from reel_crawler import crawl_fanpage_reels
 from selenium.webdriver.chrome.options import Options
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from concurrent.futures import ThreadPoolExecutor
+from kafka.profile import main as produce_profile_files
+from kafka.post_info import main as produce_post_info_files
+from kafka.reel_info import main as produce_reel_info_files
+from kafka.comment import main as produce_comment_files
 
-kol_list = [
-    # {
-    #     "name": "Giang Ơi",
-    #     "url": "https://www.facebook.com/giangoivlog"
-    # },
-    # {
-    #     "name": "Bích Phương",
-    #     "url": "https://www.facebook.com/bichphuongofficial"
-    # },
-    # {
-    #     "name": "AMEE",
-    #     "url": "https://www.facebook.com/ameest319"
-    # },
-    # {
-    #     "name": "Low G",
-    #     "url": "https://web.facebook.com/low.to.the.g"
-    # },
-    # {
-    #     "name": "Phương Ly",
-    #     "url": "https://www.facebook.com/phuongly.official"
-    # },
-    # {
-    #     "name": "Khánh Vy",
-    #     "url": "https://web.facebook.com/khanhvyofficial"
-    # },
-    # {
-    #     "name": "Hồ Ngọc Hà",
-    #     "url": "https://www.facebook.com/casihongocha"
-    # },
-    {
-        "name": "Châu Bùi",
-        "url": "https://www.facebook.com/chaubui.official"
-    },
-]
+with open('crawl_list.json', 'r', encoding='utf-8') as f:
+    kol_list = json.load(f)
 
 def split_kol_list(kols, n):
     k, m = divmod(len(kols), n)
     return [kols[i * k + min(i, m):(i + 1) * k + min(i + 1, m)] for i in range(n)]
 
 profile_dirs = [
-    # "C:/UserData/new_pf1",
-    "C:/UserData/new_pf2", 
-    # "C:/UserData/new_pf3", 
-    # "C:/UserData/selenium_profile",
+    "'/app/new_profile"
 ]
 
 def setup_driver(profile_dir):
@@ -62,11 +32,11 @@ def setup_driver(profile_dir):
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-gpu")
-    # options.add_argument("--headless=new")
+    options.add_argument("--headless=new")
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
     options.add_experimental_option("useAutomationExtension", False)
 
-    driver = webdriver.Chrome(service=Service("E:/chromedriver-win64/chromedriver.exe"), options=options)
+    driver = webdriver.Chrome(service=Service("/usr/bin/chromedriver"), options=options)
     driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
         "source": """
             Object.defineProperty(navigator, 'webdriver', {
@@ -80,20 +50,20 @@ def crawl_worker(profile_dir, kol_sublist, post_limit=10, reel_limit=1):
     driver = setup_driver(profile_dir)
     driver.get("https://www.facebook.com/")
     time.sleep(random.uniform(4, 6.5))
-
+    current_timestamp = int(time.time())
     for kol in kol_sublist:
         print(f"\n[{profile_dir}] Crawling {kol['name']}")
         try:
-            page_id = crawl_fanpage_info(driver, kol['url'])
-            # crawl_posts(driver, kol['url'], page_id, post_limit)
-            # crawl_fanpage_reels(driver, kol['url'], page_id, reel_limit)
-            # crawl_posts_without_comment(driver, kol['url'], page_id, post_limit)
-            crawl_posts_v2(driver, kol['url'], page_id, post_limit)
-            crawl_reel_without_comment(driver, kol['url'], page_id, reel_limit)
+            page_id = crawl_fanpage_info(driver, kol['url'], current_timestamp)
+            crawl_posts(driver, kol['url'], page_id, post_limit, current_timestamp)
+            crawl_fanpage_reels(driver, kol['url'], page_id, reel_limit, current_timestamp)
             print(f"✅ {kol['name']} done")
         except Exception as e:
             print(f"❌ Error with {kol['name']}: {e}")
-
+    produce_profile_files(current_timestamp)
+    produce_post_info_files(current_timestamp)
+    produce_reel_info_files(current_timestamp)
+    produce_comment_files(current_timestamp)
     driver.quit()
 
 if __name__ == "__main__":
@@ -101,12 +71,10 @@ if __name__ == "__main__":
         description="Crawl KOL fanpage with custom limits"
     )
     parser.add_argument(
-        "--post_limit", type=int, default=300,
-        help="Số bài viết tối đa mỗi KOL"
-    )
+        "--post_limit", type=int, default=3,
+    ) 
     parser.add_argument(
-        "--reel_limit", type=int, default=15,
-        help="Số reel tối đa mỗi KOL"
+        "--reel_limit", type=int, default=1,
     )
     args = parser.parse_args()
     kol_chunks = split_kol_list(kol_list, len(profile_dirs))

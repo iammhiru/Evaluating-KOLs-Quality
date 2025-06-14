@@ -4,14 +4,7 @@ from confluent_kafka import Producer
 
 KAFKA_BROKERS = os.getenv("KAFKA_BROKERS", "kafka-broker-1:29092")
 KAFKA_TOPIC   = os.getenv("KAFKA_TOPIC",   "kol-profile-topic")
-
-BASE_INFO = os.path.join(os.getcwd(), "info")
-SOURCE_DIRS = []
-if os.path.isdir(BASE_INFO):
-    for date_dir in os.listdir(BASE_INFO):
-        profile_dir = os.path.join(BASE_INFO, date_dir, "profile")
-        if os.path.isdir(profile_dir):
-            SOURCE_DIRS.append(profile_dir)
+BASE_INFO = os.path.abspath("info")
 
 producer = Producer({
     'bootstrap.servers':            KAFKA_BROKERS,
@@ -24,9 +17,9 @@ def delivery_report(err, msg):
     else:
         print(f"✅ Sent {msg.key().decode()} to {msg.topic()} [{msg.partition()}]")
 
-def produce_profile_files():
+def produce_profile_files(source_dirs):
     file_count = 0
-    for folder in SOURCE_DIRS:
+    for folder in source_dirs:
         for file_name in os.listdir(folder):
             if not file_name.endswith(".json"):
                 continue
@@ -58,8 +51,11 @@ def produce_profile_files():
     producer.flush()
     print(f"🔁 Done. Total files sent: {file_count}")
 
-if __name__ == "__main__":
-    print(f"🚀 Producing from folders:")
-    for d in SOURCE_DIRS:
-        print(f"   - {d}")
-    produce_profile_files()
+def main(current_timestamp):
+    profile_dir = os.path.join(BASE_INFO, str(current_timestamp), "profile")
+    if os.path.isdir(profile_dir):
+        source_dirs = [profile_dir]
+        print(f"🚀 Producing from folder: {profile_dir}")
+        produce_profile_files(source_dirs)
+    else:
+        print(f"⚠️ Folder {profile_dir} does not exist.")

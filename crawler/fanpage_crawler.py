@@ -8,7 +8,7 @@ import traceback
 import sys
 from utils import save_to_json
 
-def crawl_fanpage_info(driver, page_url):
+def crawl_fanpage_info(driver, page_url, current_timestamp):
     def safe_get(xpath):
         try:
             element = driver.find_element(By.XPATH, xpath)
@@ -102,7 +102,7 @@ def crawl_fanpage_info(driver, page_url):
             else:
                 info['create_date'] = create_date
         
-        save_to_json(info, f"info/{time.strftime('%d%m%Y')}/profile", f"{info['page_id'].replace(' ', '_')}.json")
+        save_to_json(info, f"info/{current_timestamp}/profile", f"{info['page_id'].replace(' ', '_')}.json")
         return info['page_id']
     except Exception as e:
         print("Lỗi xảy ra:")

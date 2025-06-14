@@ -28,7 +28,7 @@ def clean_caption_and_split(text: str):
 
     return content, hashtags
 
-def crawl_fanpage_reels(driver, page_url, page_id, num_of_scroll=2):
+def crawl_fanpage_reels(driver, page_url, page_id, num_of_scroll, current_timestamp):
     try:  
         driver.get(page_url)
         time.sleep(3)
@@ -77,12 +77,11 @@ def crawl_fanpage_reels(driver, page_url, page_id, num_of_scroll=2):
             content, hashtags = clean_caption_and_split(content)
             reel_info['content'] = content
             reel_info['hashtags'] = hashtags
-            reel_info['likes'] = driver.find_element(By.XPATH, "//div[@aria-label=\"Thích\"]/../following-sibling::div[1]").text.strip()
-            reel_info['comments_count'] = driver.find_element(By.XPATH, "//div[@aria-label=\"Bình luận\"]/../following-sibling::div[1]").text.strip()
-            reel_info['shares'] = driver.find_element(By.XPATH, "//div[@aria-label=\"Chia sẻ\"]/../following-sibling::div[1]").text.strip()
+            reel_info['likes'] = driver.find_element(By.XPATH, "//div[@aria-label=\"Thích\"]/../..").text.strip()
+            reel_info['comments_count'] = driver.find_element(By.XPATH, "//div[@aria-label=\"Bình luận\"]/../..").text.strip()
+            reel_info['shares'] = driver.find_element(By.XPATH, "//div[@aria-label=\"Chia sẻ\"]/../..").text.strip()
 
             reel_comment_button = driver.find_elements(By.XPATH, "//div[@role='button' and contains(@aria-label, 'Bình luận')]")
-            # comment_list = list()
             comment_id_set = set()
             if reel_comment_button:
                 reel_comment_button = reel_comment_button[0]
@@ -92,8 +91,8 @@ def crawl_fanpage_reels(driver, page_url, page_id, num_of_scroll=2):
                 if change_comment_button:
                     change_comment_button = change_comment_button[0]
                     ActionChains(driver).move_to_element(change_comment_button).click().perform()
-                    time.sleep(2)
-                    comment_buttons = driver.find_elements(By.XPATH, "//div[@role='menuitem' and contains(., 'Tất cả bình luận')]")
+                    time.sleep(4)
+                    comment_buttons = driver.find_elements(By.XPATH, "//div[@role='menuitem' and contains(., 'cả bình luận')]")
                     if comment_buttons:
                         comment_buttons[0].click()
                         time.sleep(2)
@@ -134,7 +133,7 @@ def crawl_fanpage_reels(driver, page_url, page_id, num_of_scroll=2):
                                 else:
                                     reel_info['post_time'] = None
 
-                    save_to_json(reel_info, f"info/{time.strftime('%d%m%Y')}/reel/reel_info", f"{page_id}_{reel_info['reel_id']}.json")            
+                    save_to_json(reel_info, f"info/{current_timestamp}/reel/reel_info", f"{page_id}_{reel_info['reel_id']}.json")            
                     for comment in comment_elements:
                         comment_info = dict()
                         comment_anchor = comment.find_elements(By.XPATH, ".//a[contains(@href, 'comment_id')]")
@@ -165,12 +164,7 @@ def crawl_fanpage_reels(driver, page_url, page_id, num_of_scroll=2):
                             comment_info['emote_count'] = 0
                         if comment_id not in comment_id_set:
                             comment_id_set.add(comment_id)
-                            # comment_list.append(comment_info)
-                            save_to_json(comment_info, f"info/{time.strftime('%d%m%Y')}/reel/comment", f"{page_id}_{reel_info['reel_id']}_{comment_info['comment_id']}.json")
-            # reel_info['comments_count_crawl'] = len(comment_list)
-            # reel_info['comments'] = comment_list
-            # reels.append(reel_info)
-
+                            save_to_json(comment_info, f"info/{current_timestamp}/reel/comment", f"{page_id}_{reel_info['reel_id']}_{comment_info['comment_id']}.json")
         return reels
     except Exception as e:
         print("Lỗi xảy ra:")

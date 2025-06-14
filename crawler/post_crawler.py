@@ -11,7 +11,7 @@ import traceback
 import sys
 from utils import save_to_json, decode_comment_base64
 
-def crawl_posts(driver, page_url, page_id, num_of_scroll=50):
+def crawl_posts(driver, page_url, page_id, num_of_scroll, current_timestamp):
     driver.get(page_url)
     identify = page_url.split("/")[-1]
     
@@ -208,8 +208,8 @@ def crawl_posts(driver, page_url, page_id, num_of_scroll=50):
                             comment_info['emote_count'] = 0
 
                         comment_id_set.add(comment_id)
-                        save_to_json(comment_info, f"info/{time.strftime('%d%m%Y')}/post/comment", f"{page_id}_{post['post_id']}_{comment_info['comment_id']}.json")
-                save_to_json(post, f"info/{time.strftime('%d%m%Y')}/post/post_info", f"{page_id}_{post['post_id']}.json") 
+                        save_to_json(comment_info, f"info/{current_timestamp}/post/comment", f"{page_id}_{post['post_id']}_{comment_info['comment_id']}.json")
+                save_to_json(post, f"info/{current_timestamp}/post/post_info", f"{page_id}_{post['post_id']}.json") 
                 post['crawl_posts'] = len(comment_id_set)
             except Exception as e:
                 print("Lỗi xảy ra:")
@@ -335,7 +335,7 @@ def crawl_posts(driver, page_url, page_id, num_of_scroll=50):
                                 else:
                                     post['post_time'] = None
 
-                        save_to_json(post, f"info/{time.strftime('%d%m%Y')}/video/post_info", f"{page_id}_{post['id']}.json")           
+                        save_to_json(post, f"info/{current_timestamp}/video/post_info", f"{page_id}_{post['id']}.json")           
                         for comment in comment_elements:
                             comment_info = dict()
                             comment_anchor = comment.find_elements(By.XPATH, ".//a[contains(@href, 'comment_id')]")
@@ -366,7 +366,7 @@ def crawl_posts(driver, page_url, page_id, num_of_scroll=50):
                                 comment_info['emote_count'] = 0
                             if comment_id not in comment_id_set:
                                 comment_id_set.add(comment_id)
-                                save_to_json(comment_info, f"info/{time.strftime('%d%m%Y')}/video/comment", f"{page_id}_{post['id']}_{comment_info['comment_id']}.json")
+                                save_to_json(comment_info, f"info/{current_timestamp}/video/comment", f"{page_id}_{post['id']}_{comment_info['comment_id']}.json")
             except Exception as e:
                 print("Lỗi xảy ra:")
                 traceback.print_exc()

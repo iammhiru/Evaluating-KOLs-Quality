@@ -4,18 +4,7 @@ from confluent_kafka import Producer
 
 KAFKA_BROKERS = os.getenv("KAFKA_BROKERS", "kafka-broker-1:29092")
 KAFKA_TOPIC   = os.getenv("KAFKA_TOPIC",   "kol-post-topic")
-
-base_info = os.path.join(os.getcwd(), "info")
-SOURCE_DIRS = []
-if os.path.isdir(base_info):
-    for date_dir in os.listdir(base_info):
-        date_path = os.path.join(base_info, date_dir)
-        if not os.path.isdir(date_path):
-            continue
-        for content_type in ("post", "video"):
-            dir_path = os.path.join(date_path, content_type, "post_info")
-            if os.path.isdir(dir_path):
-                SOURCE_DIRS.append((dir_path, content_type))
+BASE_INFO = os.path.abspath("info")
 
 producer = Producer({
     'bootstrap.servers': KAFKA_BROKERS,
@@ -30,7 +19,6 @@ def delivery_report(err, msg):
         print(f"✅ Delivered {msg.key().decode('utf-8')} to {msg.topic()} [{msg.partition()}]")
 
 def process_file(file_path, type_label="post"):
-    """Đọc JSON, gán thêm page_id/post_id/type, và produce"""
     file_name = os.path.basename(file_path)
     if not file_name.endswith(".json"):
         return False
@@ -62,10 +50,10 @@ def process_file(file_path, type_label="post"):
         print(f"❌ Error in {file_name}: {e}")
         return False
 
-def produce_post_info():
+def produce_post_info(source_dirs):
     total = 0
     print("🚀 Producing post_info from folders:")
-    for folder, label in SOURCE_DIRS:
+    for folder, label in source_dirs:
         print(f" - {folder} (as {label})")
         for fn in os.listdir(folder):
             full = os.path.join(folder, fn)
@@ -75,5 +63,18 @@ def produce_post_info():
     producer.flush()
     print(f"🔁 Done. Total post_info files sent: {total}")
 
+def main(current_timestamp):
+    source_dirs = []
+    for content_type in ("post", "video"):
+        dir_path = os.path.join(BASE_INFO, str(current_timestamp), content_type, "post_info")
+        if os.path.isdir(dir_path):
+            source_dirs.append((dir_path, content_type))
+
+    if not source_dirs:
+        print(f"⚠️ No valid post_info directories found for timestamp: {current_timestamp}")
+    else:
+        produce_post_info(source_dirs)
+
 if __name__ == "__main__":
-    produce_post_info()
+    test_timestamp = "1749832796"
+    main(test_timestamp)
