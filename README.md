@@ -10,7 +10,7 @@
 
 ## System pipeline
 
-![Luồng xử lí dữ liệu](https://github.com/iammhiru/Evaluating-KOLs-Quality/blob/master/picture/LambdaArchitecture.drawio.pdf)
+![Luồng xử lí dữ liệu](https://github.com/iammhiru/Evaluating-KOLs-Quality/blob/master/picture/LambdaArchitecture.drawio.png)
 
 ## Deploy
 
