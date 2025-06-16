@@ -20,98 +20,40 @@
 
 <https://docs.docker.com/get-docker/>
 
-#### 1.2 Kubernetes
+### 2. Prepare to deploy
 
-<https://kubernetes.io/releases/download/>
-
-#### 1.3 Helm
-
-<https://helm.sh/docs/intro/install/>
-
-### 2. Init Kubernetes cluster using minikube
-
-#### 2.1 Set context docker
+#### 2.1. Install iceberg jar package
 
 ```sh
-docker context use default
-```
-
-#### 2.2 Create cluster
-
-```sh
-minikube start --driver=docker --nodes=3 --cpus=2 --memory=6144 -p kol-evaluate
-```
-
-#### 2.3 Label node
-
-```sh
-kubectl label node kol-evaluate-m02 node-role.kubernetes.io/worker=worker & kubectl label nodes kol-evaluate-m02 role=worker
+curl -fSL https://repo1.maven.org/maven2/org/apache/iceberg/iceberg-hive-runtime/1.7.2/iceberg-hive-runtime-1.7.2.jar -O
 ```
 
 ```sh
-kubectl label node kol-evaluate-m03 node-role.kubernetes.io/worker=worker & kubectl label nodes kol-evaluate-m03 role=worker
+curl -fSL https://repo1.maven.org/maven2/org/apache/iceberg/iceberg-spark-runtime-3.3_2.12/1.7.2/iceberg-spark-runtime-3.3_2.12-1.7.2.jar -O
 ```
+
+```sh
+curl -fSL https://repo1.maven.org/maven2/org/postgresql/postgresql/42.5.1/postgresql-42.5.1.jar -O
+```
+
+#### 2.2. Create Profile Dir (Auto-login Facebook) anđ put to crawler folder
+
+ex: crawler/my_profile
+
+#### 2.3. Update .env file with your profile dir
+
+ex: PROFILE_DIR=my_profile
 
 ### 3. Deploy
 
-#### 3.1 Create namespace
-
 ```sh
-kubectl create namespace kol-evaluate & kubectl config set-context --current --namespace=kol-evaluate
+docker-compose up -d
 ```
 
-#### 3.2 Deploy Hadoop
+#### 3.1. Create DB
 
 ```sh
-helm install hadoop ./kubernetes/hadoop
+docker exec -it hive-metastore bash -c "hive -e \"CREATE DATABASE IF NOT EXISTS db1 LOCATION 'hdfs://namenode:9000/user/hive/warehouse/db1.db';\""
 ```
 
-#### 3.3 Deploy Kafka
-
-```sh
-kubectl create -f ./kubernetes/kafka-sm
-```
-
-#### 3.4 Deploy Spark
-
-```sh
-helm install spark ./kubernetes/spark
-```
-
-#### 3.4 Setup Hive-metastore
-
-```sh
-helm dependency build ./kubernetes/hive-metastore
-helm install hive-metastore ./kubernetes/hive-metastore
-```
-
-#### 3.5 Deploy Trino
-
-```sh
-helm install trino ./kubernetes/trino
-```
-
-#### 3.6 Deploy Superset
-
-```sh
-helm install superset ./kubernetes/superset
-```
-
-#### 3.7 Deploy Airflow
-
-```sh
-helm install airflow ./kubernetes/airflow
-```
-
-### 4. Init system
-
-```sh
-docker exec -it hive-metastore bash
-hive -e "CREATE DATABASE IF NOT EXISTS db1 LOCATION 'hdfs://namenode:9000/user/hive/warehouse/db1.db';"
-```
-
-```sh
-docker exec -it trino bash
-trino
-
-```
+You can view result in localhost:8088

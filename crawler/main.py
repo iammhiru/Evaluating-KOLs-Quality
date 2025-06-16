@@ -2,6 +2,8 @@ import time
 import json
 import random
 import argparse
+import os
+from dotenv import load_dotenv
 from fanpage_crawler import crawl_fanpage_info
 from post_crawler import crawl_posts
 from reel_crawler import crawl_fanpage_reels
@@ -21,9 +23,9 @@ def split_kol_list(kols, n):
     k, m = divmod(len(kols), n)
     return [kols[i * k + min(i, m):(i + 1) * k + min(i + 1, m)] for i in range(n)]
 
-profile_dirs = [
-    "'/app/new_profile"
-]
+load_dotenv()
+profile_dirs_raw = os.getenv("PROFILE_DIRS")
+profile_dirs = [dir.strip() for dir in profile_dirs_raw.split(",") if dir.strip()]
 
 def setup_driver(profile_dir):
     options = Options()
