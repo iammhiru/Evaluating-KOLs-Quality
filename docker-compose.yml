@@ -80,7 +80,6 @@ services:
     volumes:
       - ./info:/app/info
       - ./crawler:/app
-      - ./selenium_profile:/data/selenium_profile
     networks:
       - kol-evaluate
 

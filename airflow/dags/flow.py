@@ -58,7 +58,7 @@ with DAG(
             './trino --server http://trino:8080 '
             '--catalog iceberg --schema db1 '
             '--user admin '
-            '--execute "TRUNCATE TABLE kol_v_monthly"'
+            '--execute "TRUNCATE TABLE kol_post_stream"'
         )
     )
 
@@ -69,7 +69,7 @@ with DAG(
             './trino --server http://trino:8080 '
             '--catalog iceberg --schema db1 '
             '--user admin '
-            '--execute "TRUNCATE TABLE kol_v_monthly"'
+            '--execute "TRUNCATE TABLE kol_reel_stream"'
         )
     )
 
@@ -80,7 +80,7 @@ with DAG(
             './trino --server http://trino:8080 '
             '--catalog iceberg --schema db1 '
             '--user admin '
-            '--execute "TRUNCATE TABLE kol_v_monthly"'
+            '--execute "TRUNCATE TABLE kol_comment_stream"'
         )
     )
 

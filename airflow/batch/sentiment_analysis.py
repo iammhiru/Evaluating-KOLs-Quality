@@ -85,7 +85,7 @@ def classify_sentiment_scores(texts: pd.Series) -> pd.DataFrame:
 
 raw = (
     spark.read.format("iceberg")
-         .load("hive_catalog.db1.kol_comment_stream_raw")
+         .load("hive_catalog.db1.kol_comment_stream")
          .select("post_id", "comment_id", "comment_text", "record_ts")
 )
 
@@ -134,7 +134,7 @@ summary = (
       .write.format("iceberg")
       .mode("append")
       .option("overwrite-mode", "dynamic")
-      .saveAsTable("hive_catalog.db1.kol_comment_sentiment_summary_dev")
+      .saveAsTable("hive_catalog.db1.kol_comment_sentiment_summary")
 )
 
 spark.stop()

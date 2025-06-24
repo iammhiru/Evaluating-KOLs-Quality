@@ -70,7 +70,7 @@ df = (raw
       .outputMode("append")
       .option("checkpointLocation", "hdfs://namenode:9000/iceberg/checkpoints/kol_comment_stream_raw/")
       .trigger(processingTime="1 minute")
-      .toTable("hive_catalog.db1.kol_comment_stream_raw")
+      .toTable("hive_catalog.db1.kol_comment_stream")
 )
 
 spark.streams.awaitAnyTermination()

@@ -3,8 +3,8 @@ info/
 docs/
 data/
 crawler/info/
-crawler/'/
+crawler/profile/
 *.log
 *.pyc
 airflow/logs/
-selenium_profile/
+jar/

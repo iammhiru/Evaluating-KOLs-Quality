@@ -5,8 +5,8 @@ import requests
 
 default_args = {
     'owner': 'kol-team',
-    'retries': 1,
-    'retry_delay': timedelta(minutes=5)
+    'retries': 0,
+    'retry_delay': timedelta(minutes=10)
 }
 
 def call_flask_api():
@@ -17,7 +17,7 @@ def call_flask_api():
     }
 
     try:
-        response = requests.post(url, json=payload, timeout=60)
+        response = requests.post(url, json=payload)
         response.raise_for_status() 
 
         data = response.json()

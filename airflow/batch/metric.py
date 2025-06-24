@@ -259,7 +259,7 @@ def main():
     results.createOrReplaceTempView("src_df")
 
     spark.sql(f"""
-    MERGE INTO hive_catalog.db1.kol_metrics_monthly_dev AS tgt
+    MERGE INTO hive_catalog.db1.kol_metrics_monthly AS tgt
     USING src_df AS src
       ON tgt.page_id = src.page_id
      AND tgt.month   = src.month

@@ -16,7 +16,7 @@ from kafka.post_info import main as produce_post_info_files
 from kafka.reel_info import main as produce_reel_info_files
 from kafka.comment import main as produce_comment_files
 
-with open('crawl_list.json', 'r', encoding='utf-8') as f:
+with open(os.path.join(os.path.dirname(__file__), 'crawl_list.json'), 'r', encoding='utf-8') as f:
     kol_list = json.load(f)
 
 def split_kol_list(kols, n):
