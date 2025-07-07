@@ -36,11 +36,25 @@ curl -fSL https://repo1.maven.org/maven2/org/apache/iceberg/iceberg-spark-runtim
 curl -fSL https://repo1.maven.org/maven2/org/postgresql/postgresql/42.5.1/postgresql-42.5.1.jar -O
 ```
 
-#### 2.2. Create Profile Dir (Auto-login Facebook) anđ put to crawler folder
+#### 2.2. Should pull image first
+
+```sh
+docker pull hieupham0412/crawler:latest
+```
+
+```sh
+docker pull hieupham0412/spark_airflow:latest
+```
+
+```sh
+docker pull hieupham0412/superset:latest
+```
+
+#### 2.3. Create Profile Dir (Auto-login Facebook) anđ put to crawler folder
 
 ex: crawler/my_profile
 
-#### 2.3. Update .env file with your profile dir
+#### 2.4. Update .env file in crawler folder with your profile dir
 
 ex: PROFILE_DIR=my_profile
 

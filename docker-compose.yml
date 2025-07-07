@@ -15,7 +15,7 @@ services:
       - kol-evaluate
 
   airflow-scheduler:
-    image: spark_airflow:1.10
+    image: hieupham0412/spark_airflow:latest
     container_name: airflow-scheduler
     depends_on:
       - airflow-db
@@ -47,7 +47,7 @@ services:
           - spark-master
 
   airflow-web:
-    image: spark_airflow:1.10
+    image: hieupham0412/spark_airflow:latest
     container_name: airflow-web
     restart: always
     depends_on:
@@ -69,7 +69,7 @@ services:
       kol-evaluate:
 
   crawler:
-    image: crawler:14.6
+    image: hieupham0412/crawler:latest 
     container_name: crawler
     restart: always
     ports: 
@@ -310,7 +310,7 @@ services:
       - kol-evaluate
 
   superset:
-    image: superset-trino:1.0
+    image: hieupham0412/superset:latest 
     container_name: superset
     restart: always
     ports:

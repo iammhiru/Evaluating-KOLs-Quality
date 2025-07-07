@@ -73,7 +73,7 @@ if __name__ == "__main__":
         description="Crawl KOL fanpage with custom limits"
     )
     parser.add_argument(
-        "--post_limit", type=int, default=3,
+        "--post_limit", type=int, default=2,
     ) 
     parser.add_argument(
         "--reel_limit", type=int, default=1,

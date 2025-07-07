@@ -97,7 +97,6 @@ latest = (
       ))
       .filter(col("rn") == 1)
       .select("post_id", "comment_text")
-      .limit(500)
 )
 
 scored = (
@@ -134,7 +133,7 @@ summary = (
       .write.format("iceberg")
       .mode("append")
       .option("overwrite-mode", "dynamic")
-      .saveAsTable("hive_catalog.db1.kol_comment_sentiment_summary")
+      .saveAsTable("hive_catalog.db1.kol_comment_sentiment_summary_demo")
 )
 
 spark.stop()

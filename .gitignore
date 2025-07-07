@@ -1,10 +1,12 @@
-.env
 info/
 docs/
 data/
 crawler/info/
 crawler/profile/
 *.log
+*.mp4
 *.pyc
+**/__pycache__/
 airflow/logs/
 jar/
+*.gz
