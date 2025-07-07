@@ -283,6 +283,8 @@ services:
       - "8082:8080"
     volumes:
       - ./trino/etc:/etc/trino
+      - ./trino/kol-metrics-realtime.sql:/scripts/realtime.sql
+      - ./trino/kol-profile-stream.sql:/scripts/profile.sql
     depends_on:
       - hive-metastore
     networks:

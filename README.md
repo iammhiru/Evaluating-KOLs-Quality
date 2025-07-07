@@ -70,4 +70,16 @@ docker-compose up -d
 docker exec -it hive-metastore bash -c "hive -e \"CREATE DATABASE IF NOT EXISTS db1 LOCATION 'hdfs://namenode:9000/user/hive/warehouse/db1.db';\""
 ```
 
-You can view result in localhost:8088
+#### 3.2. Create Table
+
+```sh
+docker exec -it trino trino --file /scripts/profile.sql
+```
+
+#### 3.3. Create View realtime
+
+```sh
+docker exec -it trino trino --file /scripts/realtime.sql
+```
+
+You can create dataset from Trino in Superset in localhost:8088
